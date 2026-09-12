@@ -1,0 +1,10 @@
+.venv/
+.cache/
+build/
+dist/*.ttf
+dist/*.json
+dist/licenses/
+dist/THIRD_PARTY.md
+__pycache__/
+*.pyc
+.DS_Store

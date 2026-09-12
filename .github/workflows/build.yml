@@ -1,0 +1,38 @@
+name: build
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "config/**"
+      - "scripts/**"
+      - "tools/**"
+      - "pyproject.toml"
+      - ".github/workflows/build.yml"
+  pull_request:
+    paths:
+      - "config/**"
+      - "scripts/**"
+      - "tools/**"
+      - "pyproject.toml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: astral-sh/setup-uv@v6
+      - name: Build Presevka
+        run: ./scripts/build.sh
+      - name: Upload font artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: presevka-regular
+          path: |
+            dist/Presevka-Regular.ttf
+            dist/licenses/
+            dist/THIRD_PARTY.md
