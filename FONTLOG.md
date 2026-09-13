@@ -25,11 +25,21 @@ Exact notices and license terms are recorded in `OFL.txt` and
 
 ## ChangeLog
 
-### 2026 - Presevka 0.1.0 - Kwanho Lee (이관호)
+### 13 September 2026 - Presevka 0.2.0 - Kwanho Lee (이관호)
 
 - Expanded the initial Regular-only build to nine static weights: Thin,
   ExtraLight, Light, Regular, Medium, SemiBold, Bold, ExtraBold, and Black.
-- Built each Upright Latin weight from Iosevka with a custom 432/1000-em
+- Matched each Iosevka weight with the corresponding static Pretendard donor.
+- Added weight-aware family naming and `OS/2` weight-class verification.
+- Applied one uniform horizontal fit per heavy Hangul weight when necessary to
+  keep every strict Hangul glyph inside its 864-unit cell.
+- Updated installation and CI artifact packaging to include all nine weights.
+- Limited the default Iosevka build concurrency to two jobs for predictable CI
+  memory use, with `IOSEVKA_JOBS` available as an override.
+
+### 13 September 2026 - Presevka 0.1.0 - Kwanho Lee (이관호)
+
+- Built the Regular Upright Latin base from Iosevka with a custom 432/1000-em
   advance width, normal spacing, sans-serif construction, and upstream-default
   character variants.
 - Used Iosevka's unhinted build because the outlines are subsequently modified

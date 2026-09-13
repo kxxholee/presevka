@@ -14,6 +14,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--family", default="Presevka")
     p.add_argument("--style", default="Regular")
     p.add_argument("--weight-class", type=int, default=400)
+    p.add_argument("--version", default="0.2.0")
+    p.add_argument("--font-revision", type=float, default=0.2)
     return p.parse_args()
 
 
@@ -74,7 +76,9 @@ def main() -> None:
         expected_names = {
             1: legacy_family,
             2: legacy_subfamily,
+            3: f"{args.family}:{args.style}:{args.version}",
             4: full_name,
+            5: f"Version {args.version}",
             6: f"{args.family}-{args.style}",
             16: args.family,
             17: args.style,
@@ -89,6 +93,14 @@ def main() -> None:
                 raise RuntimeError(
                     f"name ID {name_id} must be exactly {expected!r}; got {sorted(actual)}"
                 )
+
+        # OpenType stores this as 16.16 fixed point, so allow one storage unit.
+        revision_tolerance = 1 / 65536
+        if abs(font["head"].fontRevision - args.font_revision) > revision_tolerance:
+            raise RuntimeError(
+                f"font revision must be {args.font_revision}, "
+                f"got {font['head'].fontRevision}"
+            )
 
         public_name_values = {
             r.toUnicode()

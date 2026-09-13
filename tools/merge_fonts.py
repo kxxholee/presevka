@@ -10,6 +10,10 @@ from fontTools.ttLib import TTFont
 from font_utils import ALL_HANGUL_RANGES, best_cmap, in_ranges, latin_cell
 
 
+FONT_VERSION = "0.2.0"
+FONT_REVISION = 0.2
+
+
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Merge prepared Pretendard Hangul into the custom Iosevka base.")
     p.add_argument("--base", required=True, type=Path)
@@ -35,8 +39,8 @@ def set_names(font: TTFont, family: str, style: str) -> None:
     rewritten_ids = {0, 1, 2, 3, 4, 5, 6, 13, 14, 16, 17, 18, 21, 22, 25}
     name.names = [record for record in name.names if record.nameID not in rewritten_ids]
 
-    version = "Version 0.1.0"
-    unique_id = f"Presevka:{style}:0.1.0"
+    version = f"Version {FONT_VERSION}"
+    unique_id = f"Presevka:{style}:{FONT_VERSION}"
     copyright_notice = (
         "Iosevka Copyright (c) 2015-2026 Renzhi Li; "
         "Pretendard Copyright (c) 2021 Kil Hyung-jin and its upstream authors; "
@@ -65,6 +69,8 @@ def set_names(font: TTFont, family: str, style: str) -> None:
         name.setName(value, nid, 3, 1, 0x409)
         mac_value = value.replace("Kwanho Lee (\uc774\uad00\ud638)", "Kwanho Lee")
         name.setName(mac_value, nid, 1, 0, 0)
+
+    font["head"].fontRevision = FONT_REVISION
 
 
 def main() -> None:
