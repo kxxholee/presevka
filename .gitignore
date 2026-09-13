@@ -10,3 +10,5 @@ dist/FONTLOG.md
 __pycache__/
 *.pyc
 .DS_Store
+.serena
+.serena/*
