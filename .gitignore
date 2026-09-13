@@ -3,8 +3,10 @@
 build/
 dist/*.ttf
 dist/*.json
+dist/OFL.txt
 dist/licenses/
 dist/THIRD_PARTY.md
+dist/FONTLOG.md
 __pycache__/
 *.pyc
 .DS_Store

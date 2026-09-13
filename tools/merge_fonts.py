@@ -37,8 +37,8 @@ def set_names(font: TTFont, family: str, style: str) -> None:
     unique_id = f"Presevka:{style}:0.1.0"
     copyright_notice = (
         "Iosevka Copyright (c) 2015-2026 Renzhi Li; "
-        "Pretendard Copyright (c) 2021- Kil Hyung-jin; "
-        "modified and merged as Presevka."
+        "Pretendard Copyright (c) 2021 Kil Hyung-jin and its upstream authors; "
+        "Presevka modifications Copyright (c) 2026 Kwanho Lee (\uc774\uad00\ud638)."
     )
     values = {
         0: copyright_notice,
@@ -48,17 +48,19 @@ def set_names(font: TTFont, family: str, style: str) -> None:
         4: full,
         5: version,
         6: ps_name,
-        13: "SIL Open Font License 1.1; see accompanying upstream license files.",
+        13: "SIL Open Font License 1.1; see accompanying OFL.txt.",
         14: "https://openfontlicense.org/open-font-license-official-text/",
         16: family,
         17: style,
     }
 
     # Windows Unicode English + Macintosh Roman English are enough for broad
-    # compatibility once stale source records have been removed.
+    # compatibility once stale source records have been removed. Mac Roman
+    # cannot encode the Korean form of the copyright holder's name.
     for nid, value in values.items():
         name.setName(value, nid, 3, 1, 0x409)
-        name.setName(value, nid, 1, 0, 0)
+        mac_value = value.replace("Kwanho Lee (\uc774\uad00\ud638)", "Kwanho Lee")
+        name.setName(mac_value, nid, 1, 0, 0)
 
 
 def main() -> None:

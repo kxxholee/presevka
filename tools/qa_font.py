@@ -76,6 +76,29 @@ def main() -> None:
         if stale:
             raise RuntimeError(f"stale build-only font names remain: {stale}")
 
+        copyright_values = {
+            r.toUnicode() for r in font["name"].names if r.nameID == 0
+        }
+        if not copyright_values or not all(
+            "Kwanho Lee" in value for value in copyright_values
+        ):
+            raise RuntimeError("Presevka copyright notice is missing from font metadata")
+        if not any("Kwanho Lee (\uc774\uad00\ud638)" in value for value in copyright_values):
+            raise RuntimeError("Unicode copyright metadata is missing the Korean holder name")
+
+        license_values = {
+            r.toUnicode() for r in font["name"].names if r.nameID == 13
+        }
+        if not license_values or not all(
+            "SIL Open Font License 1.1" in value for value in license_values
+        ):
+            raise RuntimeError("SIL OFL 1.1 notice is missing from font metadata")
+
+        if "OS/2" in font and font["OS/2"].fsType != 0:
+            raise RuntimeError(
+                f"OS/2 fsType must permit OFL use and embedding, got {font['OS/2'].fsType}"
+            )
+
         print(f"PASS: {args.font}")
         print("UPM: 1000")
         print("Latin advance: 432")

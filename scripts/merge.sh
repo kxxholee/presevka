@@ -21,6 +21,8 @@ uv run python "$ROOT/tools/qa_font.py" "$OUT" --family "Presevka"
 # Ship the exact upstream license texts beside the generated font.
 cp "$ROOT/.cache/src/Iosevka/LICENSE.md" "$ROOT/dist/licenses/Iosevka-OFL-1.1.txt"
 cp "$ROOT/.cache/src/pretendard/LICENSE" "$ROOT/dist/licenses/Pretendard-OFL-1.1.txt"
+cp "$ROOT/OFL.txt" "$ROOT/dist/OFL.txt"
 cp "$ROOT/THIRD_PARTY.md" "$ROOT/dist/THIRD_PARTY.md"
+cp "$ROOT/FONTLOG.md" "$ROOT/dist/FONTLOG.md"
 
 echo "Final font: $OUT"

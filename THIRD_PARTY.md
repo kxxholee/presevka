@@ -1,36 +1,49 @@
 # Third-party fonts
 
-This repository contains original orchestration/build code only. It does **not**
-redistribute the upstream font binaries in Git. The build clones the fonts from
-their official repositories and produces a modified merged font locally.
+Presevka uses glyph designs from the following upstream font projects. The
+generated font is a Modified Version and remains licensed under the SIL Open
+Font License, Version 1.1. The original Presevka build tools are separately
+licensed under the MIT License in `LICENSE-CODE`.
 
 ## Iosevka
 
 - Repository: https://github.com/be5invis/Iosevka
-- Copyright: Renzhi Li / The Iosevka Project Authors
+- Pinned version: v34.8.0
+- Copyright: Copyright (c) 2015-2026, Renzhi Li (aka. Belleve Invis)
 - License: SIL Open Font License 1.1
+- Reserved Font Names: none declared in the pinned version's `LICENSE.md`
 
 Presevka builds Iosevka with a custom 432/1000-em unit width. Character variant
-settings are intentionally not overridden, so the initial build uses Iosevka's
-upstream default glyph design.
+settings are not overridden, so the initial build uses Iosevka's upstream
+default glyph design.
 
 ## Pretendard
 
 - Repository: https://github.com/orioncactus/pretendard
-- Copyright: Kil Hyung-jin and upstream authors listed in Pretendard's license
+- Pinned version: v1.3.9
+- Copyright: Copyright (c) 2021, Kil Hyung-jin, together with the respective
+  authors of the upstream Source, Inter, and M PLUS 1 glyph designs
 - License: SIL Open Font License 1.1
-- Reserved Font Names in Pretendard's license include `Pretendard`, `Source`,
-  `Inter`, and `M PLUS 1`.
+- Reserved Font Name declared by the pinned Pretendard license: `Pretendard`
 
-The generated family is therefore named **Presevka**, not Pretendard or any
-other Reserved Font Name.
+Presevka also conservatively preserves the copyright, trademark, and Reserved
+Font Name notices associated with Pretendard's acknowledged upstream designs:
+`Source`, `Inter`, and `M PLUS 1`. None of these names is used as Presevka's
+primary font name.
 
-## Generated font
+Pretendard Regular supplies the Hangul outlines. Presevka converts them to
+TrueType outlines when needed, normalizes them to a 1000-unit em, adjusts them
+to an 864-unit advance, and merges them into the Iosevka base.
 
-The generated Presevka font is a Modified Version derived from OFL-licensed
-font software and must remain under SIL OFL 1.1. The build copies the exact
-Iosevka and Pretendard license files into `dist/licenses/` beside the font.
+## Presevka modifications
 
-The MIT license in this repository's `LICENSE` applies only to the original
-build scripts and documentation in this repository. It does not relicense the
-generated font or either upstream font project.
+Copyright (c) 2026 Kwanho Lee (이관호), with Reserved Font Name
+`Presevka`.
+
+Copyright applies to the original modifications, composition, metric
+adjustments, naming, and build system of Presevka. Third-party glyph designs
+remain copyright of their respective authors.
+
+The generated Presevka font and its font-specific modifications are licensed
+under SIL OFL 1.1. See `OFL.txt` for the consolidated notices and complete
+license text, and `FONTLOG.md` for the modification history.
