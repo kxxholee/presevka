@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT/scripts/weights.sh"
 
 "$ROOT/scripts/doctor.sh"
 "$ROOT/scripts/build_iosevka.sh"
@@ -9,4 +10,6 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo
 echo "Build complete."
-echo "  $ROOT/dist/Presevka-Regular.ttf"
+for weight in "${PRESEVKA_WEIGHTS[@]}"; do
+  echo "  $ROOT/dist/Presevka-${weight}.ttf"
+done

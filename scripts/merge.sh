@@ -1,22 +1,30 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BASE="$ROOT/build/iosevka/Iosevka432-Regular.ttf"
-HANGUL="$ROOT/build/pretendard/Pretendard-864.ttf"
-OUT="$ROOT/dist/Presevka-Regular.ttf"
-
-[[ -f "$BASE" ]] || { echo "Missing $BASE" >&2; exit 1; }
-[[ -f "$HANGUL" ]] || { echo "Missing $HANGUL" >&2; exit 1; }
+source "$ROOT/scripts/weights.sh"
 mkdir -p "$ROOT/dist/licenses"
 
-uv run python "$ROOT/tools/merge_fonts.py" \
-  --base "$BASE" \
-  --hangul "$HANGUL" \
-  --output "$OUT" \
-  --family "Presevka" \
-  --style "Regular"
+for weight in "${PRESEVKA_WEIGHTS[@]}"; do
+  base="$ROOT/build/iosevka/Iosevka432-${weight}.ttf"
+  hangul="$ROOT/build/pretendard/Pretendard864-${weight}.ttf"
+  output_font="$ROOT/dist/Presevka-${weight}.ttf"
 
-uv run python "$ROOT/tools/qa_font.py" "$OUT" --family "Presevka"
+  [[ -f "$base" ]] || { echo "Missing $base" >&2; exit 1; }
+  [[ -f "$hangul" ]] || { echo "Missing $hangul" >&2; exit 1; }
+
+  uv run python "$ROOT/tools/merge_fonts.py" \
+    --base "$base" \
+    --hangul "$hangul" \
+    --output "$output_font" \
+    --family "Presevka" \
+    --style "$weight"
+
+  uv run python "$ROOT/tools/qa_font.py" \
+    "$output_font" \
+    --family "Presevka" \
+    --style "$weight" \
+    --weight-class "${PRESEVKA_WEIGHT_CLASSES[$weight]}"
+done
 
 # Ship the exact upstream license texts beside the generated font.
 cp "$ROOT/.cache/src/Iosevka/LICENSE.md" "$ROOT/dist/licenses/Iosevka-OFL-1.1.txt"
@@ -25,4 +33,4 @@ cp "$ROOT/OFL.txt" "$ROOT/dist/OFL.txt"
 cp "$ROOT/THIRD_PARTY.md" "$ROOT/dist/THIRD_PARTY.md"
 cp "$ROOT/FONTLOG.md" "$ROOT/dist/FONTLOG.md"
 
-echo "Final font: $OUT"
+echo "Final fonts: $ROOT/dist/Presevka-*.ttf"

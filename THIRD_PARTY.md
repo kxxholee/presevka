@@ -31,9 +31,10 @@ Font Name notices associated with Pretendard's acknowledged upstream designs:
 `Source`, `Inter`, and `M PLUS 1`. None of these names is used as Presevka's
 primary font name.
 
-Pretendard Regular supplies the Hangul outlines. Presevka converts them to
-TrueType outlines when needed, normalizes them to a 1000-unit em, adjusts them
-to an 864-unit advance, and merges them into the Iosevka base.
+Pretendard's nine static weights supply the corresponding Hangul outlines.
+Presevka converts them to TrueType outlines when needed, normalizes them to a
+1000-unit em, adjusts them to an 864-unit advance, and merges each weight into
+the matching Iosevka base.
 
 ## Presevka modifications
 

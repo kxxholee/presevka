@@ -12,6 +12,8 @@ def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Verify the final 432/864 font geometry and mappings.")
     p.add_argument("font", type=Path)
     p.add_argument("--family", default="Presevka")
+    p.add_argument("--style", default="Regular")
+    p.add_argument("--weight-class", type=int, default=400)
     return p.parse_args()
 
 
@@ -62,11 +64,32 @@ def main() -> None:
                 f"Hangul ink crosses its 864-unit cell: left={min_left}, right={min_right}"
             )
 
-        families = {r.toUnicode() for r in font["name"].names if r.nameID in {1, 16}}
-        if families != {args.family}:
-            raise RuntimeError(
-                f"family names must be exactly {args.family!r}; got {sorted(families)}"
-            )
+        full_name = args.family if args.style == "Regular" else f"{args.family} {args.style}"
+        legacy_family = (
+            args.family if args.style in {"Regular", "Bold"} else full_name
+        )
+        legacy_subfamily = (
+            args.style if args.style in {"Regular", "Bold"} else "Regular"
+        )
+        expected_names = {
+            1: legacy_family,
+            2: legacy_subfamily,
+            4: full_name,
+            6: f"{args.family}-{args.style}",
+            16: args.family,
+            17: args.style,
+            21: args.family,
+            22: args.style,
+        }
+        for name_id, expected in expected_names.items():
+            actual = {
+                r.toUnicode() for r in font["name"].names if r.nameID == name_id
+            }
+            if actual != {expected}:
+                raise RuntimeError(
+                    f"name ID {name_id} must be exactly {expected!r}; got {sorted(actual)}"
+                )
+
         public_name_values = {
             r.toUnicode()
             for r in font["name"].names
@@ -98,11 +121,17 @@ def main() -> None:
             raise RuntimeError(
                 f"OS/2 fsType must permit OFL use and embedding, got {font['OS/2'].fsType}"
             )
+        if "OS/2" not in font or font["OS/2"].usWeightClass != args.weight_class:
+            actual = font["OS/2"].usWeightClass if "OS/2" in font else None
+            raise RuntimeError(
+                f"weight class must be {args.weight_class}, got {actual}"
+            )
 
         print(f"PASS: {args.font}")
         print("UPM: 1000")
         print("Latin advance: 432")
         print("Hangul advance: 864")
+        print(f"Style: {args.style} ({args.weight_class})")
         print(f"Modern Hangul mappings: {len(modern)}")
         print(f"Minimum modern-Hangul ink margins: left={min_left:.1f}, right={min_right:.1f}")
     finally:

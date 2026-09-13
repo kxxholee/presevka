@@ -7,11 +7,51 @@ spacing = "normal"
 serifs = "sans"
 exportGlyphNames = false
 
-# Build only Regular Upright for the first reproducible Presevka prototype.
+# Match Pretendard's nine static weights.
+[buildPlans.PresevkaBase432.weights.Thin]
+shape = 100
+menu = 100
+css = 100
+
+[buildPlans.PresevkaBase432.weights.ExtraLight]
+shape = 200
+menu = 200
+css = 200
+
+[buildPlans.PresevkaBase432.weights.Light]
+shape = 300
+menu = 300
+css = 300
+
 [buildPlans.PresevkaBase432.weights.Regular]
 shape = 400
 menu = 400
 css = 400
+
+[buildPlans.PresevkaBase432.weights.Medium]
+shape = 500
+menu = 500
+css = 500
+
+[buildPlans.PresevkaBase432.weights.SemiBold]
+shape = 600
+menu = 600
+css = 600
+
+[buildPlans.PresevkaBase432.weights.Bold]
+shape = 700
+menu = 700
+css = 700
+
+[buildPlans.PresevkaBase432.weights.ExtraBold]
+shape = 800
+menu = 800
+css = 800
+
+[buildPlans.PresevkaBase432.weights.Black]
+shape = 900
+menu = 900
+css = 900
 
 [buildPlans.PresevkaBase432.slopes.Upright]
 angle = 0

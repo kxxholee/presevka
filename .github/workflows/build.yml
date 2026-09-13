@@ -43,7 +43,7 @@ jobs:
         with:
           name: presevka-regular
           path: |
-            dist/Presevka-Regular.ttf
+            dist/Presevka-*.ttf
             dist/OFL.txt
             dist/licenses/
             dist/THIRD_PARTY.md

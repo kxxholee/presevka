@@ -26,6 +26,8 @@ def set_names(font: TTFont, family: str, style: str) -> None:
     ps_style = "".join(ch for ch in style if ch.isascii() and ch.isalnum()) or "Regular"
     ps_name = f"{ps_family}-{ps_style}"
     full = family if style == "Regular" else f"{family} {style}"
+    legacy_family = family if style in {"Regular", "Bold"} else full
+    legacy_subfamily = style if style in {"Regular", "Bold"} else "Regular"
 
     # Iosevka's intermediate build intentionally has a temporary family name
     # ("Presevka Base 432"). Remove *all* old naming records that can expose
@@ -42,8 +44,8 @@ def set_names(font: TTFont, family: str, style: str) -> None:
     )
     values = {
         0: copyright_notice,
-        1: family,
-        2: style,
+        1: legacy_family,
+        2: legacy_subfamily,
         3: unique_id,
         4: full,
         5: version,
@@ -52,6 +54,8 @@ def set_names(font: TTFont, family: str, style: str) -> None:
         14: "https://openfontlicense.org/open-font-license-official-text/",
         16: family,
         17: style,
+        21: family,
+        22: style,
     }
 
     # Windows Unicode English + Macintosh Roman English are enough for broad
@@ -74,6 +78,13 @@ def main() -> None:
             raise RuntimeError("both base and donor must be TrueType/glyf fonts")
         if base["head"].unitsPerEm != donor["head"].unitsPerEm:
             raise RuntimeError("base and donor UPM do not match")
+        if "OS/2" not in base or "OS/2" not in donor:
+            raise RuntimeError("both base and donor must contain an OS/2 table")
+        if base["OS/2"].usWeightClass != donor["OS/2"].usWeightClass:
+            raise RuntimeError(
+                "base and donor weight classes do not match: "
+                f"{base['OS/2'].usWeightClass} != {donor['OS/2'].usWeightClass}"
+            )
         if latin_cell(base) != 432:
             raise RuntimeError("base Latin cell is not 432")
 

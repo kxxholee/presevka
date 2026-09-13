@@ -17,7 +17,7 @@ The public family name and all user-visible naming records use `Presevka`.
 ## Upstream sources
 
 - Iosevka v34.8.0, copyright Renzhi Li / The Iosevka Project Authors.
-- Pretendard v1.3.9 Regular, copyright Kil Hyung-jin and the respective authors
+- Pretendard v1.3.9 static weights, copyright Kil Hyung-jin and the respective authors
   of its upstream glyph designs.
 
 Exact notices and license terms are recorded in `OFL.txt` and
@@ -27,7 +27,9 @@ Exact notices and license terms are recorded in `OFL.txt` and
 
 ### 2026 - Presevka 0.1.0 - Kwanho Lee (이관호)
 
-- Built the Regular Upright Latin base from Iosevka with a custom 432/1000-em
+- Expanded the initial Regular-only build to nine static weights: Thin,
+  ExtraLight, Light, Regular, Medium, SemiBold, Bold, ExtraBold, and Black.
+- Built each Upright Latin weight from Iosevka with a custom 432/1000-em
   advance width, normal spacing, sans-serif construction, and upstream-default
   character variants.
 - Used Iosevka's unhinted build because the outlines are subsequently modified

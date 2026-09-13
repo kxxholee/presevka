@@ -1,10 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT/scripts/weights.sh"
 SRC="$ROOT/.cache/src/Iosevka"
 OUT="$ROOT/build/iosevka"
 REPO="${IOSEVKA_REPO:-https://github.com/be5invis/Iosevka.git}"
 REF="${IOSEVKA_REF:-v34.8.0}"
+JOBS="${IOSEVKA_JOBS:-2}"
+
+[[ "$JOBS" =~ ^[1-9][0-9]*$ ]] || {
+  echo "IOSEVKA_JOBS must be a positive integer; got $JOBS" >&2
+  exit 1
+}
 
 mkdir -p "$ROOT/.cache/src" "$OUT"
 
@@ -22,25 +29,23 @@ cp "$ROOT/config/private-build-plans.toml" "$SRC/private-build-plans.toml"
   npm ci
   # Intentionally use the unhinted target. Presevka modifies/merges outlines
   # afterwards, so ttfautohint is neither required nor desirable here.
-  npm run build -- ttf-unhinted::PresevkaBase432
+  npm run build -- ttf-unhinted::PresevkaBase432 "--jCmd=$JOBS"
 )
 
-mapfile -t candidates < <(
-  find "$SRC/dist/PresevkaBase432/TTF-Unhinted" -type f -iname '*.ttf' 2>/dev/null \
-    | grep -Ei 'regular' \
-    | grep -Evi 'italic|oblique' \
-    | sort
-)
+for weight in "${PRESEVKA_WEIGHTS[@]}"; do
+  source_font="$SRC/dist/PresevkaBase432/TTF-Unhinted/PresevkaBase432-${weight}.ttf"
+  output_font="$OUT/Iosevka432-${weight}.ttf"
 
-if (( ${#candidates[@]} != 1 )); then
-  echo "Could not uniquely identify the Regular Upright Iosevka build." >&2
-  printf 'Candidates (%d):\n' "${#candidates[@]}" >&2
-  printf '  %s\n' "${candidates[@]:-<none>}" >&2
-  echo "All generated TTFs:" >&2
-  find "$SRC/dist/PresevkaBase432" -type f -iname '*.ttf' -print >&2 || true
-  exit 1
-fi
+  if [[ ! -f "$source_font" ]]; then
+    echo "Missing Iosevka ${weight} output: $source_font" >&2
+    echo "All generated TTFs:" >&2
+    find "$SRC/dist/PresevkaBase432" -type f -iname '*.ttf' -print >&2 || true
+    exit 1
+  fi
 
-cp "${candidates[0]}" "$OUT/Iosevka432-Regular.ttf"
-uv run python "$ROOT/tools/verify_iosevka.py" "$OUT/Iosevka432-Regular.ttf"
-echo "Iosevka base: $OUT/Iosevka432-Regular.ttf"
+  cp "$source_font" "$output_font"
+  uv run python "$ROOT/tools/verify_iosevka.py" \
+    "$output_font" \
+    --weight-class "${PRESEVKA_WEIGHT_CLASSES[$weight]}"
+  echo "Iosevka base: $output_font"
+done

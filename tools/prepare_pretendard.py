@@ -25,7 +25,7 @@ from font_utils import (
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
         description=(
-            "Normalize Pretendard Regular to the Iosevka UPM and fit Hangul "
+            "Normalize a static Pretendard weight to the Iosevka UPM and fit Hangul "
             "to exactly two 432-unit Latin cells."
         )
     )
@@ -42,7 +42,7 @@ def convert_cff_to_truetype(font: TTFont) -> str:
         return "truetype"
     if "CFF2" in font:
         raise RuntimeError(
-            "Pretendard source is variable/CFF2. Use the static Pretendard-Regular.otf file."
+            "Pretendard source is variable/CFF2. Use a static Pretendard OTF file."
         )
     if "CFF " not in font:
         raise RuntimeError("Pretendard source has neither glyf nor CFF outlines")
@@ -78,6 +78,16 @@ def main() -> None:
     base = TTFont(args.base_font)
     source = TTFont(args.input)
     try:
+        if "OS/2" not in base or "OS/2" not in source:
+            raise RuntimeError("both base and donor must contain an OS/2 table")
+        base_weight = int(base["OS/2"].usWeightClass)
+        source_weight = int(source["OS/2"].usWeightClass)
+        if base_weight != source_weight:
+            raise RuntimeError(
+                f"weight mismatch: Iosevka base is {base_weight}, "
+                f"Pretendard donor is {source_weight}"
+            )
+
         source_flavor = convert_cff_to_truetype(source)
 
         target_upem = int(base["head"].unitsPerEm)
@@ -191,6 +201,42 @@ def main() -> None:
                 int(getattr(glyph, "xMin", old_lsb + round(dx))),
             )
 
+        # Heavy Pretendard weights intentionally overhang their original
+        # advance. Presevka promises a strict two-cell Hangul grid, so apply
+        # one weight-wide horizontal fit instead of distorting individual
+        # glyphs by different amounts.
+        fit_center = target_advance / 2.0
+        strict_bounds = []
+        for name in strict_names:
+            glyph = glyf[name]
+            glyph.recalcBounds(glyf)
+            if getattr(glyph, "numberOfContours", 0) != 0:
+                strict_bounds.append((glyph.xMin, glyph.xMax))
+
+        strict_fit_x_scale = 1.0
+        if strict_bounds:
+            max_radius = max(
+                fit_center - min(x_min for x_min, _ in strict_bounds),
+                max(x_max for _, x_max in strict_bounds) - fit_center,
+            )
+            if max_radius > fit_center:
+                strict_fit_x_scale = fit_center / max_radius
+                x_shift = fit_center * (1.0 - strict_fit_x_scale)
+                for name in strict_names:
+                    recording = DecomposingRecordingPen(source.getGlyphSet())
+                    source.getGlyphSet()[name].draw(recording)
+                    pen = TTGlyphPen(None)
+                    recording.replay(
+                        TransformPen(
+                            pen,
+                            Transform(strict_fit_x_scale, 0, 0, 1.0, x_shift, 0),
+                        )
+                    )
+                    glyph = pen.glyph()
+                    glyph.recalcBounds(glyf)
+                    glyf[name] = glyph
+                    hmtx.metrics[name] = (target_advance, glyph.xMin)
+
         source.save(args.output)
 
         check = TTFont(args.output)
@@ -214,6 +260,7 @@ def main() -> None:
 
         report = {
             "source_outline_flavor": source_flavor,
+            "weight_class": source_weight,
             "source_upem": source_upem,
             "source_modern_hangul_advance": source_hangul_advance,
             "source_modern_hangul_em": source_hangul_advance / source_upem,
@@ -223,6 +270,8 @@ def main() -> None:
             "target_hangul_em": target_advance / target_upem,
             "x_scale": x_scale,
             "x_change_percent": (x_scale - 1.0) * 100.0,
+            "strict_fit_x_scale": strict_fit_x_scale,
+            "strict_fit_x_change_percent": (strict_fit_x_scale - 1.0) * 100.0,
             "strict_hangul_glyphs": len(strict_names),
             "all_importable_hangul_glyphs": len(hangul_names),
         }
