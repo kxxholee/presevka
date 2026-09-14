@@ -4,15 +4,6 @@ import argparse
 import json
 from pathlib import Path
 
-from fontTools.fontBuilder import FontBuilder
-from fontTools.pens.cu2quPen import Cu2QuPen
-from fontTools.pens.recordingPen import DecomposingRecordingPen
-from fontTools.pens.transformPen import TransformPen
-from fontTools.pens.ttGlyphPen import TTGlyphPen
-from fontTools.misc.transform import Transform
-from fontTools.ttLib import TTFont
-from fontTools.ttLib.scaleUpem import scale_upem
-
 from font_utils import (
     ALL_HANGUL_RANGES,
     STRICT_HANGUL_RANGES,
@@ -20,6 +11,14 @@ from font_utils import (
     in_ranges,
     latin_cell,
 )
+from fontTools.fontBuilder import FontBuilder
+from fontTools.misc.transform import Transform
+from fontTools.pens.cu2quPen import Cu2QuPen
+from fontTools.pens.recordingPen import DecomposingRecordingPen
+from fontTools.pens.transformPen import TransformPen
+from fontTools.pens.ttGlyphPen import TTGlyphPen
+from fontTools.ttLib import TTFont
+from fontTools.ttLib.scaleUpem import scale_upem
 
 
 def parse_args() -> argparse.Namespace:

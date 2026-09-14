@@ -11,5 +11,8 @@ source "$ROOT/scripts/weights.sh"
 echo
 echo "Build complete."
 for weight in "${PRESEVKA_WEIGHTS[@]}"; do
-  echo "  $ROOT/dist/Presevka-${weight}.ttf"
+  for slope in "${PRESEVKA_SLOPES[@]}"; do
+    variant="$(presevka_variant_suffix "$weight" "$slope")"
+    echo "  $ROOT/dist/Presevka-${variant}.ttf"
+  done
 done

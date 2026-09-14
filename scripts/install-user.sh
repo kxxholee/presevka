@@ -10,4 +10,4 @@ cp "${fonts[@]}" "$DEST/"
 if command -v fc-cache >/dev/null 2>&1; then
   fc-cache -f "$DEST"
 fi
-echo "Installed ${#fonts[@]} Presevka weights to $DEST"
+echo "Installed ${#fonts[@]} Presevka font faces to $DEST"

@@ -4,6 +4,21 @@ from collections.abc import Iterable
 from fontTools.pens.boundsPen import BoundsPen
 from fontTools.ttLib import TTFont
 
+PRESEVKA_WEIGHTS = (
+    "Thin",
+    "ExtraLight",
+    "Light",
+    "Regular",
+    "Medium",
+    "SemiBold",
+    "Bold",
+    "ExtraBold",
+    "Black",
+)
+PRESEVKA_SLOPES = ("Upright", "Italic")
+PRESEVKA_ITALIC_ANGLE = 9.4
+PRESEVKA_POST_ITALIC_ANGLE = -float(round(PRESEVKA_ITALIC_ANGLE))
+
 # Strict 2-cell characters in the resulting monospace font.
 STRICT_HANGUL_RANGES = (
     (0x3130, 0x318F),  # Hangul Compatibility Jamo
@@ -50,3 +65,28 @@ def latin_cell(font: TTFont) -> int:
     if not widths or len(set(widths)) != 1:
         raise RuntimeError(f"base font is not monospaced for probe glyphs: {widths}")
     return widths[0]
+
+
+def presevka_style_name(weight: str, slope: str) -> str:
+    if slope == "Upright":
+        return weight
+    if weight == "Regular":
+        return slope
+    return f"{weight} {slope}"
+
+
+def presevka_legacy_names(family: str, weight: str, slope: str) -> tuple[str, str]:
+    if weight in {"Regular", "Bold"}:
+        legacy_family = family
+        legacy_weight = weight
+    else:
+        legacy_family = f"{family} {weight}"
+        legacy_weight = "Regular"
+
+    if slope == "Italic":
+        legacy_subfamily = (
+            "Italic" if legacy_weight == "Regular" else f"{legacy_weight} Italic"
+        )
+    else:
+        legacy_subfamily = legacy_weight
+    return legacy_family, legacy_subfamily

@@ -5,18 +5,38 @@ from pathlib import Path
 
 from fontTools.ttLib import TTFont
 
-from font_utils import STRICT_HANGUL_RANGES, best_cmap, glyph_bounds, in_ranges
+from fontTools.pens.recordingPen import DecomposingRecordingPen
+
+from font_utils import (
+    PRESEVKA_POST_ITALIC_ANGLE,
+    PRESEVKA_SLOPES,
+    PRESEVKA_WEIGHTS,
+    STRICT_HANGUL_RANGES,
+    best_cmap,
+    glyph_bounds,
+    in_ranges,
+    presevka_legacy_names,
+    presevka_style_name,
+)
 
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Verify the final 432/864 font geometry and mappings.")
     p.add_argument("font", type=Path)
     p.add_argument("--family", default="Presevka")
-    p.add_argument("--style", default="Regular")
+    p.add_argument("--weight", choices=PRESEVKA_WEIGHTS, default="Regular")
+    p.add_argument("--slope", choices=PRESEVKA_SLOPES, default="Upright")
     p.add_argument("--weight-class", type=int, default=400)
-    p.add_argument("--version", default="0.2.0")
-    p.add_argument("--font-revision", type=float, default=0.2)
+    p.add_argument("--version", default="0.3.0")
+    p.add_argument("--font-revision", type=float, default=0.3)
+    p.add_argument("--hangul-source", type=Path)
     return p.parse_args()
+
+
+def decomposed_outline(font: TTFont, glyph_name: str):
+    pen = DecomposingRecordingPen(font.getGlyphSet())
+    font.getGlyphSet()[glyph_name].draw(pen)
+    return pen.value
 
 
 def main() -> None:
@@ -66,24 +86,22 @@ def main() -> None:
                 f"Hangul ink crosses its 864-unit cell: left={min_left}, right={min_right}"
             )
 
-        full_name = args.family if args.style == "Regular" else f"{args.family} {args.style}"
-        legacy_family = (
-            args.family if args.style in {"Regular", "Bold"} else full_name
-        )
-        legacy_subfamily = (
-            args.style if args.style in {"Regular", "Bold"} else "Regular"
+        style = presevka_style_name(args.weight, args.slope)
+        full_name = args.family if style == "Regular" else f"{args.family} {style}"
+        legacy_family, legacy_subfamily = presevka_legacy_names(
+            args.family, args.weight, args.slope
         )
         expected_names = {
             1: legacy_family,
             2: legacy_subfamily,
-            3: f"{args.family}:{args.style}:{args.version}",
+            3: f"{args.family}:{style}:{args.version}",
             4: full_name,
             5: f"Version {args.version}",
-            6: f"{args.family}-{args.style}",
+            6: f"{args.family}-" + "".join(ch for ch in style if ch.isalnum()),
             16: args.family,
-            17: args.style,
+            17: style,
             21: args.family,
-            22: args.style,
+            22: style,
         }
         for name_id, expected in expected_names.items():
             actual = {
@@ -139,11 +157,55 @@ def main() -> None:
                 f"weight class must be {args.weight_class}, got {actual}"
             )
 
+        is_italic = args.slope == "Italic"
+        fs_selection = font["OS/2"].fsSelection
+        if bool(fs_selection & (1 << 0)) != is_italic:
+            raise RuntimeError(
+                f"OS/2 italic flag mismatch for {args.slope}: {fs_selection}"
+            )
+        if fs_selection & (1 << 9):
+            raise RuntimeError(f"face must not be marked oblique: {fs_selection}")
+        if bool(font["head"].macStyle & (1 << 1)) != is_italic:
+            raise RuntimeError(
+                f"head.macStyle italic mismatch for {args.slope}: "
+                f"{font['head'].macStyle}"
+            )
+        expected_angle = PRESEVKA_POST_ITALIC_ANGLE if is_italic else 0.0
+        if abs(font["post"].italicAngle - expected_angle) > 0.01:
+            raise RuntimeError(
+                f"italic angle must be {expected_angle}, "
+                f"got {font['post'].italicAngle}"
+            )
+
+        if args.hangul_source:
+            source = TTFont(args.hangul_source)
+            try:
+                source_cmap = best_cmap(source)
+                # These samples cover compatibility Jamo and widely different
+                # modern-syllable constructions. Exact equality ensures that
+                # Italic faces keep the upright Pretendard outlines.
+                upright_samples = (0x3131, 0x314F, 0xAC00, 0xAC01, 0xB098, 0xD7A3)
+                for cp in upright_samples:
+                    if cp not in cmap or cp not in source_cmap:
+                        raise RuntimeError(f"upright Hangul sample U+{cp:04X} is missing")
+                    actual_outline = decomposed_outline(font, cmap[cp])
+                    source_outline = decomposed_outline(source, source_cmap[cp])
+                    if actual_outline != source_outline:
+                        raise RuntimeError(
+                            f"Hangul outline U+{cp:04X} differs from upright donor"
+                        )
+                    if hmtx.metrics[cmap[cp]] != source["hmtx"].metrics[source_cmap[cp]]:
+                        raise RuntimeError(
+                            f"Hangul metrics U+{cp:04X} differ from upright donor"
+                        )
+            finally:
+                source.close()
+
         print(f"PASS: {args.font}")
         print("UPM: 1000")
         print("Latin advance: 432")
         print("Hangul advance: 864")
-        print(f"Style: {args.style} ({args.weight_class})")
+        print(f"Style: {style} ({args.weight_class})")
         print(f"Modern Hangul mappings: {len(modern)}")
         print(f"Minimum modern-Hangul ink margins: left={min_left:.1f}, right={min_right:.1f}")
     finally:

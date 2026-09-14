@@ -59,6 +59,12 @@ shape = "upright"
 menu = "upright"
 css = "normal"
 
+[buildPlans.PresevkaBase432.slopes.Italic]
+angle = 9.4
+shape = "italic"
+menu = "italic"
+css = "italic"
+
 # 432 * 2 = 864, matching the normalized Pretendard Hangul cell.
 [buildPlans.PresevkaBase432.widths.Normal]
 shape = 432

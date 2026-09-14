@@ -41,7 +41,7 @@ jobs:
       - name: Upload font artifact
         uses: actions/upload-artifact@v4
         with:
-          name: presevka-regular
+          name: presevka-ttf
           path: |
             dist/Presevka-*.ttf
             dist/OFL.txt

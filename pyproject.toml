@@ -1,6 +1,6 @@
 [project]
 name = "presevka-builder"
-version = "0.2.0"
+version = "0.3.0"
 description = "Build Presevka from a 432-unit Iosevka and 864-unit Pretendard Hangul"
 requires-python = ">=3.11"
 dependencies = [

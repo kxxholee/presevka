@@ -7,11 +7,20 @@ from fontTools.pens.recordingPen import DecomposingRecordingPen
 from fontTools.pens.ttGlyphPen import TTGlyphPen
 from fontTools.ttLib import TTFont
 
-from font_utils import ALL_HANGUL_RANGES, best_cmap, in_ranges, latin_cell
+from font_utils import (
+    ALL_HANGUL_RANGES,
+    PRESEVKA_SLOPES,
+    PRESEVKA_WEIGHTS,
+    best_cmap,
+    in_ranges,
+    latin_cell,
+    presevka_legacy_names,
+    presevka_style_name,
+)
 
 
-FONT_VERSION = "0.2.0"
-FONT_REVISION = 0.2
+FONT_VERSION = "0.3.0"
+FONT_REVISION = 0.3
 
 
 def parse_args() -> argparse.Namespace:
@@ -20,18 +29,21 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--hangul", required=True, type=Path)
     p.add_argument("--output", required=True, type=Path)
     p.add_argument("--family", default="Presevka")
-    p.add_argument("--style", default="Regular")
+    p.add_argument("--weight", choices=PRESEVKA_WEIGHTS, default="Regular")
+    p.add_argument("--slope", choices=PRESEVKA_SLOPES, default="Upright")
     return p.parse_args()
 
 
-def set_names(font: TTFont, family: str, style: str) -> None:
+def set_names(font: TTFont, family: str, weight: str, slope: str) -> None:
     name = font["name"]
+    style = presevka_style_name(weight, slope)
     ps_family = "".join(ch for ch in family if ch.isascii() and ch.isalnum()) or "Presevka"
     ps_style = "".join(ch for ch in style if ch.isascii() and ch.isalnum()) or "Regular"
     ps_name = f"{ps_family}-{ps_style}"
     full = family if style == "Regular" else f"{family} {style}"
-    legacy_family = family if style in {"Regular", "Bold"} else full
-    legacy_subfamily = style if style in {"Regular", "Bold"} else "Regular"
+    legacy_family, legacy_subfamily = presevka_legacy_names(
+        family, weight, slope
+    )
 
     # Iosevka's intermediate build intentionally has a temporary family name
     # ("Presevka Base 432"). Remove *all* old naming records that can expose
@@ -171,7 +183,10 @@ def main() -> None:
                 os2.usWinAscent = max(os2.usWinAscent, max_y + guard)
                 os2.usWinDescent = max(os2.usWinDescent, -min_y + guard)
 
-        set_names(base, args.family, args.style)
+        # The Italic base contains Iosevka's native Italic designs. Hangul is
+        # deliberately copied from the same upright Pretendard donor without
+        # slanting or otherwise synthesizing its outlines.
+        set_names(base, args.family, args.weight, args.slope)
         if "DSIG" in base:
             del base["DSIG"]
 

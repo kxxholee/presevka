@@ -5,25 +5,32 @@ source "$ROOT/scripts/weights.sh"
 mkdir -p "$ROOT/dist/licenses"
 
 for weight in "${PRESEVKA_WEIGHTS[@]}"; do
-  base="$ROOT/build/iosevka/Iosevka432-${weight}.ttf"
   hangul="$ROOT/build/pretendard/Pretendard864-${weight}.ttf"
-  output_font="$ROOT/dist/Presevka-${weight}.ttf"
-
-  [[ -f "$base" ]] || { echo "Missing $base" >&2; exit 1; }
   [[ -f "$hangul" ]] || { echo "Missing $hangul" >&2; exit 1; }
 
-  uv run python "$ROOT/tools/merge_fonts.py" \
-    --base "$base" \
-    --hangul "$hangul" \
-    --output "$output_font" \
-    --family "Presevka" \
-    --style "$weight"
+  for slope in "${PRESEVKA_SLOPES[@]}"; do
+    variant="$(presevka_variant_suffix "$weight" "$slope")"
+    base="$ROOT/build/iosevka/Iosevka432-${variant}.ttf"
+    output_font="$ROOT/dist/Presevka-${variant}.ttf"
 
-  uv run python "$ROOT/tools/qa_font.py" \
-    "$output_font" \
-    --family "Presevka" \
-    --style "$weight" \
-    --weight-class "${PRESEVKA_WEIGHT_CLASSES[$weight]}"
+    [[ -f "$base" ]] || { echo "Missing $base" >&2; exit 1; }
+
+    uv run python "$ROOT/tools/merge_fonts.py" \
+      --base "$base" \
+      --hangul "$hangul" \
+      --output "$output_font" \
+      --family "Presevka" \
+      --weight "$weight" \
+      --slope "$slope"
+
+    uv run python "$ROOT/tools/qa_font.py" \
+      "$output_font" \
+      --family "Presevka" \
+      --weight "$weight" \
+      --slope "$slope" \
+      --weight-class "${PRESEVKA_WEIGHT_CLASSES[$weight]}" \
+      --hangul-source "$hangul"
+  done
 done
 
 # Ship the exact upstream license texts beside the generated font.

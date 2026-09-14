@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-<span style="font-family: 'Presevka'; font-style: italic;">
+<span style="font-style: italic;">
   Iosevka에 Pretendard의 한글을 결합한 고정폭 글꼴<br>
 </span>
 </p>
@@ -44,7 +44,8 @@ make doctor
 make build
 ```
 
-완성 파일은 `dist/Presevka-{Weight}.ttf`로 생성됩니다.
+아홉 가지 weight의 Upright와 Italic, 총 18개 TTF가 `dist/`에 생성됩니다.
+Italic에서도 한글과 자모는 기울이지 않은 Pretendard 윤곽을 유지합니다.
 
 <!-- 
 Linux에서는 다음 명령으로 현재 사용자에게 바로 설치할 수 있습니다.

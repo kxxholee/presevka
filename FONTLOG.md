@@ -25,6 +25,17 @@ Exact notices and license terms are recorded in `OFL.txt` and
 
 ## ChangeLog
 
+### 14 September 2026 - Presevka 0.3.0 - Kwanho Lee (이관호)
+
+- Added native Iosevka Italic faces for all nine weights, producing eighteen
+  static Upright and Italic TTF files in total.
+- Kept all imported Pretendard Hangul and Jamo outlines upright in Italic faces
+  instead of applying synthetic slanting.
+- Added slope-aware OpenType naming and metadata verification, including style
+  linking, italic flags, and italic angle checks.
+- Added QA comparison against the prepared upright Pretendard donor to prevent
+  accidental Hangul slanting in future builds.
+
 ### 13 September 2026 - Presevka 0.2.0 - Kwanho Lee (이관호)
 
 - Expanded the initial Regular-only build to nine static weights: Thin,

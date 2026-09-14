@@ -33,19 +33,23 @@ cp "$ROOT/config/private-build-plans.toml" "$SRC/private-build-plans.toml"
 )
 
 for weight in "${PRESEVKA_WEIGHTS[@]}"; do
-  source_font="$SRC/dist/PresevkaBase432/TTF-Unhinted/PresevkaBase432-${weight}.ttf"
-  output_font="$OUT/Iosevka432-${weight}.ttf"
+  for slope in "${PRESEVKA_SLOPES[@]}"; do
+    variant="$(presevka_variant_suffix "$weight" "$slope")"
+    source_font="$SRC/dist/PresevkaBase432/TTF-Unhinted/PresevkaBase432-${variant}.ttf"
+    output_font="$OUT/Iosevka432-${variant}.ttf"
 
-  if [[ ! -f "$source_font" ]]; then
-    echo "Missing Iosevka ${weight} output: $source_font" >&2
-    echo "All generated TTFs:" >&2
-    find "$SRC/dist/PresevkaBase432" -type f -iname '*.ttf' -print >&2 || true
-    exit 1
-  fi
+    if [[ ! -f "$source_font" ]]; then
+      echo "Missing Iosevka ${weight} ${slope} output: $source_font" >&2
+      echo "All generated TTFs:" >&2
+      find "$SRC/dist/PresevkaBase432" -type f -iname '*.ttf' -print >&2 || true
+      exit 1
+    fi
 
-  cp "$source_font" "$output_font"
-  uv run python "$ROOT/tools/verify_iosevka.py" \
-    "$output_font" \
-    --weight-class "${PRESEVKA_WEIGHT_CLASSES[$weight]}"
-  echo "Iosevka base: $output_font"
+    cp "$source_font" "$output_font"
+    uv run python "$ROOT/tools/verify_iosevka.py" \
+      "$output_font" \
+      --weight-class "${PRESEVKA_WEIGHT_CLASSES[$weight]}" \
+      --slope "$slope"
+    echo "Iosevka base: $output_font"
+  done
 done
