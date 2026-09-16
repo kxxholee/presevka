@@ -9,7 +9,6 @@ from fontTools.pens.recordingPen import DecomposingRecordingPen
 
 from font_utils import (
     PRESEVKA_HANGUL_CELL,
-    PRESEVKA_HANGUL_INK_WIDTHS,
     PRESEVKA_LATIN_CELL,
     PRESEVKA_POST_ITALIC_ANGLE,
     PRESEVKA_SLOPES,
@@ -25,7 +24,7 @@ from font_utils import (
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        description="Verify the final 500/1000 font geometry and mappings."
+        description="Verify the final 480/960 font geometry and mappings."
     )
     p.add_argument("font", type=Path)
     p.add_argument("--family", default="Presevka")
@@ -112,12 +111,11 @@ def main() -> None:
                 strict_center - x_min,
                 x_max - strict_center,
             )
-        expected_ink_width = PRESEVKA_HANGUL_INK_WIDTHS[args.weight_class]
         actual_ink_width = strict_ink_radius * 2
-        if abs(actual_ink_width - expected_ink_width) > 2:
+        if actual_ink_width >= PRESEVKA_HANGUL_CELL:
             raise RuntimeError(
-                f"Hangul ink envelope must be {expected_ink_width} units, "
-                f"got {actual_ink_width}"
+                f"Hangul ink envelope must remain inside its cell: "
+                f"{actual_ink_width} >= {PRESEVKA_HANGUL_CELL}"
             )
 
         style = presevka_style_name(args.weight, args.slope)
@@ -162,7 +160,7 @@ def main() -> None:
         stale = sorted(
             v
             for v in public_name_values
-            if "Base 500" in v or "PresevkaBase500" in v
+            if "Presevka Base" in v or "PresevkaBase" in v
         )
         if stale:
             raise RuntimeError(f"stale build-only font names remain: {stale}")

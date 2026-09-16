@@ -7,8 +7,8 @@ SIL Open Font License, Version 1.1.
 ## Basic font information
 
 Presevka combines an Iosevka programming-font base with Hangul glyphs prepared
-from Pretendard. Its Latin advance width is 500 units and its strict Hangul
-advance width is 1000 units in a 1000-unit em, so one Hangul cell occupies
+from Pretendard. Its Latin advance width is 480 units and its strict Hangul
+advance width is 960 units in a 1000-unit em, so one Hangul cell occupies
 exactly two Latin cells.
 
 The public family name and all user-visible naming records use `Presevka`.
@@ -27,15 +27,17 @@ Exact notices and license terms are recorded in `OFL.txt` and
 
 ### 16 September 2026 - Presevka 0.4.0 - Kwanho Lee (이관호)
 
-- Restored Iosevka's upstream-default 500-unit Latin cell and default character
-  variants for more familiar proportions and readability.
-- Expanded the strict Hangul advance from 864 to 1000 units, retaining the
-  conventional relationship of one Hangul cell to two Latin cells.
-- Applied one uniform horizontal transform per Pretendard weight, fitting the
-  Hangul ink to centered 910–940-unit envelopes while preserving relative
-  glyph proportions and side bearings.
-- Added build-time and final-font QA for the 500/1000 advances and the
-  weight-specific Hangul ink envelopes.
+- Adopted Iosevka's `ss14` (JetBrains Mono Style) character-variant preset and
+  a 480-unit Latin cell for familiar glyph forms with moderately compact
+  proportions.
+- Set the strict Hangul advance to 960 units, retaining the conventional
+  relationship of one Hangul cell to two Latin cells.
+- Preserved Pretendard's original weight-dependent horizontal proportions,
+  applying the same minimal 2% enlargement to every Hangul and Jamo outline
+  and centering it in the wider cell. Resulting ink envelopes span 858–934
+  units across the nine weights.
+- Added build-time and final-font QA for the 480/960 advances, the prepared
+  Hangul geometry, and upright Hangul outlines in Italic faces.
 - Documented how to select an Iosevka stylistic-set preset or override
   individual Latin glyph variants in custom builds.
 

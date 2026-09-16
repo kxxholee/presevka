@@ -7,7 +7,7 @@ from pathlib import Path
 from font_utils import (
     ALL_HANGUL_RANGES,
     PRESEVKA_HANGUL_CELL,
-    PRESEVKA_HANGUL_INK_WIDTHS,
+    PRESEVKA_HANGUL_OUTLINE_X_SCALE,
     PRESEVKA_LATIN_CELL,
     STRICT_HANGUL_RANGES,
     best_cmap,
@@ -28,7 +28,7 @@ def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
         description=(
             "Normalize a static Pretendard weight to the Iosevka UPM and fit Hangul "
-            "to exactly two 500-unit Latin cells."
+            "to exactly two 480-unit Latin cells."
         )
     )
     p.add_argument("--input", required=True, type=Path)
@@ -110,10 +110,6 @@ def main() -> None:
                 f"expected target Hangul advance {PRESEVKA_HANGUL_CELL}, "
                 f"got {target_advance}"
             )
-        if source_weight not in PRESEVKA_HANGUL_INK_WIDTHS:
-            raise RuntimeError(f"no Hangul ink target for weight {source_weight}")
-        target_ink_width = PRESEVKA_HANGUL_INK_WIDTHS[source_weight]
-
         source_upem = int(source["head"].unitsPerEm)
         cmap = best_cmap(source)
         hmtx = source["hmtx"]
@@ -181,10 +177,9 @@ def main() -> None:
                 int(getattr(glyph, "xMin", old_lsb + round(dx))),
             )
 
-        # Fit the entire weight to one centered ink envelope. The same scale is
-        # applied to every Hangul/Jamo glyph, preserving Pretendard's relative
-        # proportions while leaving the remainder of the 1000-unit cell as
-        # side bearings.
+        # Preserve Pretendard's original weight-dependent proportions. Every
+        # Hangul/Jamo outline receives the same minimal 2% enlargement, while
+        # the wider 960-unit advance is primarily expressed as side bearings.
         fit_center = target_advance / 2.0
         strict_bounds = []
         for name in strict_names:
@@ -199,8 +194,8 @@ def main() -> None:
             fit_center - min(x_min for x_min, _ in strict_bounds),
             max(x_max for _, x_max in strict_bounds) - fit_center,
         )
-        target_ink_radius = target_ink_width / 2.0
-        outline_x_scale = target_ink_radius / max_radius_before
+        outline_x_scale = PRESEVKA_HANGUL_OUTLINE_X_SCALE
+        expected_ink_radius = max_radius_before * outline_x_scale
         fit_glyph_set = source.getGlyphSet()
         for name in hangul_names:
             advance, _ = hmtx.metrics[name]
@@ -251,10 +246,10 @@ def main() -> None:
                 fit_center - min(x_min for x_min, _ in check_bounds),
                 max(x_max for _, x_max in check_bounds) - fit_center,
             )
-            if abs(actual_ink_radius - target_ink_radius) > 1:
+            if abs(actual_ink_radius - expected_ink_radius) > 1:
                 raise RuntimeError(
                     "prepared donor ink envelope verification failed: "
-                    f"expected radius {target_ink_radius}, got {actual_ink_radius}"
+                    f"expected radius {expected_ink_radius}, got {actual_ink_radius}"
                 )
         finally:
             check.close()
@@ -269,7 +264,6 @@ def main() -> None:
             "latin_cell": cell,
             "target_hangul_advance": target_advance,
             "target_hangul_em": target_advance / target_upem,
-            "target_hangul_ink_width": target_ink_width,
             "natural_max_ink_radius": max_radius_before,
             "outline_x_scale": outline_x_scale,
             "outline_x_change_percent": (outline_x_scale - 1.0) * 100.0,
