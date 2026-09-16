@@ -29,19 +29,19 @@ cp "$ROOT/config/private-build-plans.toml" "$SRC/private-build-plans.toml"
   npm ci
   # Intentionally use the unhinted target. Presevka modifies/merges outlines
   # afterwards, so ttfautohint is neither required nor desirable here.
-  npm run build -- ttf-unhinted::PresevkaBase480 "--jCmd=$JOBS"
+  npm run build -- ttf-unhinted::PresevkaBase500 "--jCmd=$JOBS"
 )
 
 for weight in "${PRESEVKA_WEIGHTS[@]}"; do
   for slope in "${PRESEVKA_SLOPES[@]}"; do
     variant="$(presevka_variant_suffix "$weight" "$slope")"
-    source_font="$SRC/dist/PresevkaBase480/TTF-Unhinted/PresevkaBase480-${variant}.ttf"
-    output_font="$OUT/Iosevka480-${variant}.ttf"
+    source_font="$SRC/dist/PresevkaBase500/TTF-Unhinted/PresevkaBase500-${variant}.ttf"
+    output_font="$OUT/Iosevka500-${variant}.ttf"
 
     if [[ ! -f "$source_font" ]]; then
       echo "Missing Iosevka ${weight} ${slope} output: $source_font" >&2
       echo "All generated TTFs:" >&2
-      find "$SRC/dist/PresevkaBase480" -type f -iname '*.ttf' -print >&2 || true
+      find "$SRC/dist/PresevkaBase500" -type f -iname '*.ttf' -print >&2 || true
       exit 1
     fi
 

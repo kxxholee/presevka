@@ -13,8 +13,8 @@ licensed under the MIT License in `LICENSE-CODE`.
 - License: SIL Open Font License 1.1
 - Reserved Font Names: none declared in the pinned version's `LICENSE.md`
 
-Presevka builds Iosevka with a 480/1000-em unit width and inherits Iosevka's
-`ss14` (JetBrains Mono Style) character-variant preset.
+Presevka builds Iosevka with its default 500/1000-em unit width and inherits
+Iosevka's `ss14` (JetBrains Mono Style) character-variant preset.
 
 ## Pretendard
 
@@ -33,7 +33,7 @@ primary font name.
 Pretendard's nine static weights supply the corresponding Hangul outlines.
 Presevka converts them to TrueType outlines when needed, normalizes them to a
 1000-unit em, enlarges every Hangul outline horizontally by 2% around its
-center, places strict Hangul in a 960-unit advance, and merges it into the
+center, places strict Hangul in a 1000-unit advance, and merges it into the
 matching Iosevka base.
 
 ## Presevka modifications

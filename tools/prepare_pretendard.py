@@ -28,7 +28,7 @@ def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
         description=(
             "Normalize a static Pretendard weight to the Iosevka UPM and fit Hangul "
-            "to exactly two 480-unit Latin cells."
+            "to exactly two 500-unit Latin cells."
         )
     )
     p.add_argument("--input", required=True, type=Path)
@@ -177,9 +177,9 @@ def main() -> None:
                 int(getattr(glyph, "xMin", old_lsb + round(dx))),
             )
 
-        # Preserve Pretendard's original weight-dependent proportions. Every
-        # Hangul/Jamo outline receives the same minimal 2% enlargement, while
-        # the wider 960-unit advance is primarily expressed as side bearings.
+        # Preserve Pretendard's original weight-dependent proportions while
+        # applying the same minimal 2% optical enlargement to every Hangul/Jamo
+        # outline. The remainder of the 1000-unit advance becomes side bearings.
         fit_center = target_advance / 2.0
         strict_bounds = []
         for name in strict_names:

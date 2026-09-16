@@ -24,7 +24,7 @@ from font_utils import (
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        description="Verify the final 480/960 font geometry and mappings."
+        description="Verify the final 500/1000 font geometry and mappings."
     )
     p.add_argument("font", type=Path)
     p.add_argument("--family", default="Presevka")

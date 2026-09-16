@@ -47,7 +47,7 @@ def set_names(font: TTFont, family: str, weight: str, slope: str) -> None:
     )
 
     # Iosevka's intermediate build intentionally has a temporary family name
-    # ("Presevka Base 480"). Remove *all* old naming records that can expose
+    # ("Presevka Base 500"). Remove *all* old naming records that can expose
     # that build-only name before writing the public Presevka family names.
     rewritten_ids = {0, 1, 2, 3, 4, 5, 6, 13, 14, 16, 17, 18, 21, 22, 25}
     name.names = [record for record in name.names if record.nameID not in rewritten_ids]
