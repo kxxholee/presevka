@@ -9,6 +9,7 @@ from fontTools.ttLib import TTFont
 
 from font_utils import (
     ALL_HANGUL_RANGES,
+    PRESEVKA_LATIN_CELL,
     PRESEVKA_SLOPES,
     PRESEVKA_WEIGHTS,
     best_cmap,
@@ -19,8 +20,8 @@ from font_utils import (
 )
 
 
-FONT_VERSION = "0.3.0"
-FONT_REVISION = 0.3
+FONT_VERSION = "0.4.0"
+FONT_REVISION = 0.4
 
 
 def parse_args() -> argparse.Namespace:
@@ -46,7 +47,7 @@ def set_names(font: TTFont, family: str, weight: str, slope: str) -> None:
     )
 
     # Iosevka's intermediate build intentionally has a temporary family name
-    # ("Presevka Base 432"). Remove *all* old naming records that can expose
+    # ("Presevka Base 500"). Remove *all* old naming records that can expose
     # that build-only name before writing the public Presevka family names.
     rewritten_ids = {0, 1, 2, 3, 4, 5, 6, 13, 14, 16, 17, 18, 21, 22, 25}
     name.names = [record for record in name.names if record.nameID not in rewritten_ids]
@@ -103,8 +104,10 @@ def main() -> None:
                 "base and donor weight classes do not match: "
                 f"{base['OS/2'].usWeightClass} != {donor['OS/2'].usWeightClass}"
             )
-        if latin_cell(base) != 432:
-            raise RuntimeError("base Latin cell is not 432")
+        if latin_cell(base) != PRESEVKA_LATIN_CELL:
+            raise RuntimeError(
+                f"base Latin cell is not {PRESEVKA_LATIN_CELL}"
+            )
 
         donor_cmap = best_cmap(donor)
         donor_hmtx = donor["hmtx"]

@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 from fontTools.ttLib import TTFont
 from font_utils import (
+    PRESEVKA_LATIN_CELL,
     PRESEVKA_POST_ITALIC_ANGLE,
     PRESEVKA_SLOPES,
     best_cmap,
@@ -24,7 +25,7 @@ try:
     widths = {font["hmtx"].metrics[cmap[ord(ch)]][0] for ch in sample if ord(ch) in cmap}
     if upem != 1000:
         raise SystemExit(f"Iosevka UPM mismatch: expected 1000, got {upem}")
-    if cell != 432 or widths != {432}:
+    if cell != PRESEVKA_LATIN_CELL or widths != {PRESEVKA_LATIN_CELL}:
         raise SystemExit(f"Iosevka width mismatch: probe={cell}, sample={sorted(widths)}")
     if "OS/2" not in font or font["OS/2"].usWeightClass != args.weight_class:
         actual = font["OS/2"].usWeightClass if "OS/2" in font else None

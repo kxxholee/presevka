@@ -6,6 +6,9 @@ from pathlib import Path
 
 from font_utils import (
     ALL_HANGUL_RANGES,
+    PRESEVKA_HANGUL_CELL,
+    PRESEVKA_HANGUL_INK_WIDTHS,
+    PRESEVKA_LATIN_CELL,
     STRICT_HANGUL_RANGES,
     best_cmap,
     in_ranges,
@@ -25,7 +28,7 @@ def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
         description=(
             "Normalize a static Pretendard weight to the Iosevka UPM and fit Hangul "
-            "to exactly two 432-unit Latin cells."
+            "to exactly two 500-unit Latin cells."
         )
     )
     p.add_argument("--input", required=True, type=Path)
@@ -93,16 +96,23 @@ def main() -> None:
         cell = latin_cell(base)
         target_advance = cell * 2
 
-        if cell != 432:
+        if cell != PRESEVKA_LATIN_CELL:
             raise RuntimeError(
-                f"expected Iosevka Latin cell 432, got {cell}; refusing mismatched build"
+                f"expected Iosevka Latin cell {PRESEVKA_LATIN_CELL}, got {cell}; "
+                "refusing mismatched build"
             )
         if target_upem != 1000:
             raise RuntimeError(
                 f"expected Iosevka UPM 1000, got {target_upem}; update math deliberately"
             )
-        if target_advance != 864:
-            raise RuntimeError(f"expected target Hangul advance 864, got {target_advance}")
+        if target_advance != PRESEVKA_HANGUL_CELL:
+            raise RuntimeError(
+                f"expected target Hangul advance {PRESEVKA_HANGUL_CELL}, "
+                f"got {target_advance}"
+            )
+        if source_weight not in PRESEVKA_HANGUL_INK_WIDTHS:
+            raise RuntimeError(f"no Hangul ink target for weight {source_weight}")
+        target_ink_width = PRESEVKA_HANGUL_INK_WIDTHS[source_weight]
 
         source_upem = int(source["head"].unitsPerEm)
         cmap = best_cmap(source)
@@ -126,40 +136,11 @@ def main() -> None:
             )
         source_hangul_advance = modern_advances.pop()
 
-        # Exact em-ratio conversion. If current Pretendard remains 1770/2048,
-        # this is about 0.9997016949, only ~0.02983% narrower.
-        x_scale = (target_advance / target_upem) / (
-            source_hangul_advance / source_upem
-        )
-
-        glyph_set = source.getGlyphSet()
-        glyf = source["glyf"]
-        replacements: dict[str, object] = {}
         hangul_names = {
             name
             for cp, name in cmap.items()
             if in_ranges(cp, ALL_HANGUL_RANGES) and name in hmtx.metrics
         }
-
-        for name in hangul_names:
-            advance, lsb = hmtx.metrics[name]
-            recording = DecomposingRecordingPen(glyph_set)
-            glyph_set[name].draw(recording)
-            pen = TTGlyphPen(None)
-            x_shift = advance * (1.0 - x_scale) / 2.0
-            recording.replay(
-                TransformPen(pen, Transform(x_scale, 0, 0, 1.0, x_shift, 0))
-            )
-            glyph = pen.glyph()
-            glyph.recalcBounds(glyf)
-            replacements[name] = glyph
-            hmtx.metrics[name] = (
-                advance,
-                int(getattr(glyph, "xMin", round(lsb * x_scale + x_shift))),
-            )
-
-        for name, glyph in replacements.items():
-            glyf[name] = glyph
 
         # The source outlines changed, so source hints/signatures are no longer valid.
         for tag in ("fpgm", "prep", "cvt ", "DSIG"):
@@ -200,10 +181,10 @@ def main() -> None:
                 int(getattr(glyph, "xMin", old_lsb + round(dx))),
             )
 
-        # Heavy Pretendard weights intentionally overhang their original
-        # advance. Presevka promises a strict two-cell Hangul grid, so apply
-        # one weight-wide horizontal fit instead of distorting individual
-        # glyphs by different amounts.
+        # Fit the entire weight to one centered ink envelope. The same scale is
+        # applied to every Hangul/Jamo glyph, preserving Pretendard's relative
+        # proportions while leaving the remainder of the 1000-unit cell as
+        # side bearings.
         fit_center = target_advance / 2.0
         strict_bounds = []
         for name in strict_names:
@@ -212,29 +193,32 @@ def main() -> None:
             if getattr(glyph, "numberOfContours", 0) != 0:
                 strict_bounds.append((glyph.xMin, glyph.xMax))
 
-        strict_fit_x_scale = 1.0
-        if strict_bounds:
-            max_radius = max(
-                fit_center - min(x_min for x_min, _ in strict_bounds),
-                max(x_max for _, x_max in strict_bounds) - fit_center,
+        if not strict_bounds:
+            raise RuntimeError("no strict Hangul outlines available for ink fitting")
+        max_radius_before = max(
+            fit_center - min(x_min for x_min, _ in strict_bounds),
+            max(x_max for _, x_max in strict_bounds) - fit_center,
+        )
+        target_ink_radius = target_ink_width / 2.0
+        outline_x_scale = target_ink_radius / max_radius_before
+        fit_glyph_set = source.getGlyphSet()
+        for name in hangul_names:
+            advance, _ = hmtx.metrics[name]
+            center = advance / 2.0
+            x_shift = center * (1.0 - outline_x_scale)
+            recording = DecomposingRecordingPen(fit_glyph_set)
+            fit_glyph_set[name].draw(recording)
+            pen = TTGlyphPen(None)
+            recording.replay(
+                TransformPen(
+                    pen,
+                    Transform(outline_x_scale, 0, 0, 1.0, x_shift, 0),
+                )
             )
-            if max_radius > fit_center:
-                strict_fit_x_scale = fit_center / max_radius
-                x_shift = fit_center * (1.0 - strict_fit_x_scale)
-                for name in strict_names:
-                    recording = DecomposingRecordingPen(source.getGlyphSet())
-                    source.getGlyphSet()[name].draw(recording)
-                    pen = TTGlyphPen(None)
-                    recording.replay(
-                        TransformPen(
-                            pen,
-                            Transform(strict_fit_x_scale, 0, 0, 1.0, x_shift, 0),
-                        )
-                    )
-                    glyph = pen.glyph()
-                    glyph.recalcBounds(glyf)
-                    glyf[name] = glyph
-                    hmtx.metrics[name] = (target_advance, glyph.xMin)
+            glyph = pen.glyph()
+            glyph.recalcBounds(glyf)
+            glyf[name] = glyph
+            hmtx.metrics[name] = (advance, glyph.xMin)
 
         source.save(args.output)
 
@@ -244,6 +228,7 @@ def main() -> None:
                 raise RuntimeError("prepared donor UPM verification failed")
             check_cmap = best_cmap(check)
             check_hmtx = check["hmtx"]
+            check_glyf = check["glyf"]
             widths = {
                 check_hmtx.metrics[name][0]
                 for cp, name in check_cmap.items()
@@ -253,6 +238,23 @@ def main() -> None:
             if widths != {target_advance}:
                 raise RuntimeError(
                     f"prepared donor width verification failed: {sorted(widths)}"
+                )
+            check_bounds = []
+            for cp, name in check_cmap.items():
+                if not in_ranges(cp, STRICT_HANGUL_RANGES):
+                    continue
+                glyph = check_glyf[name]
+                glyph.recalcBounds(check_glyf)
+                if getattr(glyph, "numberOfContours", 0) != 0:
+                    check_bounds.append((glyph.xMin, glyph.xMax))
+            actual_ink_radius = max(
+                fit_center - min(x_min for x_min, _ in check_bounds),
+                max(x_max for _, x_max in check_bounds) - fit_center,
+            )
+            if abs(actual_ink_radius - target_ink_radius) > 1:
+                raise RuntimeError(
+                    "prepared donor ink envelope verification failed: "
+                    f"expected radius {target_ink_radius}, got {actual_ink_radius}"
                 )
         finally:
             check.close()
@@ -267,10 +269,11 @@ def main() -> None:
             "latin_cell": cell,
             "target_hangul_advance": target_advance,
             "target_hangul_em": target_advance / target_upem,
-            "x_scale": x_scale,
-            "x_change_percent": (x_scale - 1.0) * 100.0,
-            "strict_fit_x_scale": strict_fit_x_scale,
-            "strict_fit_x_change_percent": (strict_fit_x_scale - 1.0) * 100.0,
+            "target_hangul_ink_width": target_ink_width,
+            "natural_max_ink_radius": max_radius_before,
+            "outline_x_scale": outline_x_scale,
+            "outline_x_change_percent": (outline_x_scale - 1.0) * 100.0,
+            "actual_hangul_ink_width": actual_ink_radius * 2,
             "strict_hangul_glyphs": len(strict_names),
             "all_importable_hangul_glyphs": len(hangul_names),
         }

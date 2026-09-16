@@ -18,6 +18,23 @@ PRESEVKA_WEIGHTS = (
 PRESEVKA_SLOPES = ("Upright", "Italic")
 PRESEVKA_ITALIC_ANGLE = 9.4
 PRESEVKA_POST_ITALIC_ANGLE = -float(round(PRESEVKA_ITALIC_ANGLE))
+PRESEVKA_LATIN_CELL = 500
+PRESEVKA_HANGUL_CELL = 1000
+
+# Maximum centered ink envelope for strict Hangul glyphs in each static
+# weight. A single weight-wide horizontal transform preserves the relative
+# proportions of Pretendard's glyphs; heavier faces receive tighter bearings.
+PRESEVKA_HANGUL_INK_WIDTHS = {
+    100: 910,
+    200: 914,
+    300: 918,
+    400: 922,
+    500: 926,
+    600: 930,
+    700: 934,
+    800: 938,
+    900: 940,
+}
 
 # Strict 2-cell characters in the resulting monospace font.
 STRICT_HANGUL_RANGES = (

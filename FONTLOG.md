@@ -6,9 +6,9 @@ SIL Open Font License, Version 1.1.
 
 ## Basic font information
 
-Presevka combines a narrow Iosevka programming-font base with Hangul glyphs
-prepared from Pretendard. Its Latin advance width is 432 units and its strict
-Hangul advance width is 864 units in a 1000-unit em, so one Hangul cell occupies
+Presevka combines an Iosevka programming-font base with Hangul glyphs prepared
+from Pretendard. Its Latin advance width is 500 units and its strict Hangul
+advance width is 1000 units in a 1000-unit em, so one Hangul cell occupies
 exactly two Latin cells.
 
 The public family name and all user-visible naming records use `Presevka`.
@@ -24,6 +24,20 @@ Exact notices and license terms are recorded in `OFL.txt` and
 `THIRD_PARTY.md`.
 
 ## ChangeLog
+
+### 16 September 2026 - Presevka 0.4.0 - Kwanho Lee (이관호)
+
+- Restored Iosevka's upstream-default 500-unit Latin cell and default character
+  variants for more familiar proportions and readability.
+- Expanded the strict Hangul advance from 864 to 1000 units, retaining the
+  conventional relationship of one Hangul cell to two Latin cells.
+- Applied one uniform horizontal transform per Pretendard weight, fitting the
+  Hangul ink to centered 910–940-unit envelopes while preserving relative
+  glyph proportions and side bearings.
+- Added build-time and final-font QA for the 500/1000 advances and the
+  weight-specific Hangul ink envelopes.
+- Documented how to select an Iosevka stylistic-set preset or override
+  individual Latin glyph variants in custom builds.
 
 ### 14 September 2026 - Presevka 0.3.0 - Kwanho Lee (이관호)
 

@@ -13,9 +13,9 @@ licensed under the MIT License in `LICENSE-CODE`.
 - License: SIL Open Font License 1.1
 - Reserved Font Names: none declared in the pinned version's `LICENSE.md`
 
-Presevka builds Iosevka with a custom 432/1000-em unit width. Character variant
-settings are not overridden, so the initial build uses Iosevka's upstream
-default glyph design.
+Presevka builds Iosevka with its default 500/1000-em unit width. Character
+variant settings are not overridden, so the initial build uses Iosevka's
+upstream default glyph design.
 
 ## Pretendard
 
@@ -33,8 +33,8 @@ primary font name.
 
 Pretendard's nine static weights supply the corresponding Hangul outlines.
 Presevka converts them to TrueType outlines when needed, normalizes them to a
-1000-unit em, adjusts them to an 864-unit advance, and merges each weight into
-the matching Iosevka base.
+1000-unit em, fits each weight to a 910–940-unit centered ink envelope inside a
+1000-unit advance, and merges it into the matching Iosevka base.
 
 ## Presevka modifications
 

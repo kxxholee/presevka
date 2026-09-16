@@ -8,6 +8,9 @@ from fontTools.ttLib import TTFont
 from fontTools.pens.recordingPen import DecomposingRecordingPen
 
 from font_utils import (
+    PRESEVKA_HANGUL_CELL,
+    PRESEVKA_HANGUL_INK_WIDTHS,
+    PRESEVKA_LATIN_CELL,
     PRESEVKA_POST_ITALIC_ANGLE,
     PRESEVKA_SLOPES,
     PRESEVKA_WEIGHTS,
@@ -21,14 +24,16 @@ from font_utils import (
 
 
 def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Verify the final 432/864 font geometry and mappings.")
+    p = argparse.ArgumentParser(
+        description="Verify the final 500/1000 font geometry and mappings."
+    )
     p.add_argument("font", type=Path)
     p.add_argument("--family", default="Presevka")
     p.add_argument("--weight", choices=PRESEVKA_WEIGHTS, default="Regular")
     p.add_argument("--slope", choices=PRESEVKA_SLOPES, default="Upright")
     p.add_argument("--weight-class", type=int, default=400)
-    p.add_argument("--version", default="0.3.0")
-    p.add_argument("--font-revision", type=float, default=0.3)
+    p.add_argument("--version", default="0.4.0")
+    p.add_argument("--font-revision", type=float, default=0.4)
     p.add_argument("--hangul-source", type=Path)
     return p.parse_args()
 
@@ -56,8 +61,11 @@ def main() -> None:
             for ch in latin_sample
             if ord(ch) in cmap
         }
-        if latin_widths != {432}:
-            raise RuntimeError(f"Latin sample is not exactly 432 units: {sorted(latin_widths)}")
+        if latin_widths != {PRESEVKA_LATIN_CELL}:
+            raise RuntimeError(
+                f"Latin sample is not exactly {PRESEVKA_LATIN_CELL} units: "
+                f"{sorted(latin_widths)}"
+            )
 
         modern = [cp for cp in range(0xAC00, 0xD7A4) if cp in cmap]
         if len(modern) != 11172:
@@ -68,8 +76,11 @@ def main() -> None:
             for cp, name in cmap.items()
             if in_ranges(cp, STRICT_HANGUL_RANGES) and name in hmtx.metrics
         }
-        if strict_widths != {864}:
-            raise RuntimeError(f"Hangul strict widths are not 864: {sorted(strict_widths)}")
+        if strict_widths != {PRESEVKA_HANGUL_CELL}:
+            raise RuntimeError(
+                f"Hangul strict widths are not {PRESEVKA_HANGUL_CELL}: "
+                f"{sorted(strict_widths)}"
+            )
 
         min_left = float("inf")
         min_right = float("inf")
@@ -80,10 +91,33 @@ def main() -> None:
                 continue
             x_min, _, x_max, _ = bounds
             min_left = min(min_left, x_min)
-            min_right = min(min_right, 864 - x_max)
+            min_right = min(min_right, PRESEVKA_HANGUL_CELL - x_max)
         if min_left < -2 or min_right < -2:
             raise RuntimeError(
-                f"Hangul ink crosses its 864-unit cell: left={min_left}, right={min_right}"
+                f"Hangul ink crosses its {PRESEVKA_HANGUL_CELL}-unit cell: "
+                f"left={min_left}, right={min_right}"
+            )
+
+        strict_ink_radius = 0.0
+        strict_center = PRESEVKA_HANGUL_CELL / 2.0
+        for cp, name in cmap.items():
+            if not in_ranges(cp, STRICT_HANGUL_RANGES):
+                continue
+            bounds = glyph_bounds(font, name)
+            if bounds is None:
+                continue
+            x_min, _, x_max, _ = bounds
+            strict_ink_radius = max(
+                strict_ink_radius,
+                strict_center - x_min,
+                x_max - strict_center,
+            )
+        expected_ink_width = PRESEVKA_HANGUL_INK_WIDTHS[args.weight_class]
+        actual_ink_width = strict_ink_radius * 2
+        if abs(actual_ink_width - expected_ink_width) > 2:
+            raise RuntimeError(
+                f"Hangul ink envelope must be {expected_ink_width} units, "
+                f"got {actual_ink_width}"
             )
 
         style = presevka_style_name(args.weight, args.slope)
@@ -125,7 +159,11 @@ def main() -> None:
             for r in font["name"].names
             if r.nameID in {1, 3, 4, 6, 16, 17}
         }
-        stale = sorted(v for v in public_name_values if "Base 432" in v or "PresevkaBase432" in v)
+        stale = sorted(
+            v
+            for v in public_name_values
+            if "Base 500" in v or "PresevkaBase500" in v
+        )
         if stale:
             raise RuntimeError(f"stale build-only font names remain: {stale}")
 
@@ -203,8 +241,9 @@ def main() -> None:
 
         print(f"PASS: {args.font}")
         print("UPM: 1000")
-        print("Latin advance: 432")
-        print("Hangul advance: 864")
+        print(f"Latin advance: {PRESEVKA_LATIN_CELL}")
+        print(f"Hangul advance: {PRESEVKA_HANGUL_CELL}")
+        print(f"Hangul ink envelope: {actual_ink_width:.1f}")
         print(f"Style: {style} ({args.weight_class})")
         print(f"Modern Hangul mappings: {len(modern)}")
         print(f"Minimum modern-Hangul ink margins: left={min_left:.1f}, right={min_right:.1f}")

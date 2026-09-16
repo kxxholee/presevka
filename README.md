@@ -46,6 +46,36 @@ make build
 
 아홉 가지 weight의 Upright와 Italic, 총 18개 TTF가 `dist/`에 생성됩니다.
 Italic에서도 한글과 자모는 기울이지 않은 Pretendard 윤곽을 유지합니다.
+라틴은 Iosevka의 기본 500-unit 셀을 사용하고, 한글은 두 라틴 셀에 해당하는
+1000-unit advance 안에 weight별 910–940-unit ink envelope로 배치됩니다.
+
+### Iosevka 라틴 커스터마이징
+
+Presevka의 기본 라틴 디자인은 Iosevka의 기본 glyph variant를 그대로 사용하고,
+원본과 같은 500-unit 셀 폭을 사용합니다. 이 설정은
+[`config/private-build-plans.toml`](./config/private-build-plans.toml)에 있습니다.
+
+다른 Iosevka 스타일을 사용하려면 build plan에 원하는 stylistic set을
+상속하도록 설정합니다. 예를 들어 JetBrains Mono Style은 다음과 같습니다.
+
+```toml
+[buildPlans.PresevkaBase500.variants]
+inherits = "ss14"
+```
+
+특정 글리프만 바꾸려면 같은 build plan에 variant override를 추가할 수 있습니다.
+
+```toml
+[buildPlans.PresevkaBase500.variants.design]
+i = "serifed-asymmetric"
+zero = "slashed"
+```
+
+사용 가능한 preset과 variant 이름은
+[Iosevka v34.8.0 Custom Build 문서](https://github.com/be5invis/Iosevka/blob/v34.8.0/doc/custom-build.md)를
+참고하세요. 설정을 바꾼 뒤 `make build`를 다시 실행하면 됩니다. Pretendard가
+이미 준비된 작업 트리에서는 `./scripts/build_iosevka.sh`와
+`./scripts/merge.sh`만 차례로 실행해도 됩니다.
 
 <!-- 
 Linux에서는 다음 명령으로 현재 사용자에게 바로 설치할 수 있습니다.

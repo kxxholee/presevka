@@ -1,7 +1,7 @@
 [project]
 name = "presevka-builder"
-version = "0.3.0"
-description = "Build Presevka from a 432-unit Iosevka and 864-unit Pretendard Hangul"
+version = "0.4.0"
+description = "Build Presevka from 500-unit Iosevka and 1000-unit Pretendard Hangul cells"
 requires-python = ">=3.11"
 dependencies = [
   "fonttools>=4.63.0",

@@ -16,10 +16,10 @@ git -C "$SRC" fetch --depth 1 origin "$REF"
 git -C "$SRC" checkout --detach FETCH_HEAD
 
 for weight in "${PRESEVKA_WEIGHTS[@]}"; do
-  base="$ROOT/build/iosevka/Iosevka432-${weight}.ttf"
+  base="$ROOT/build/iosevka/Iosevka500-${weight}.ttf"
   font="$SRC/packages/pretendard/dist/public/static/Pretendard-${weight}.otf"
-  output_font="$OUT/Pretendard864-${weight}.ttf"
-  report="$OUT/Pretendard864-${weight}.metrics.json"
+  output_font="$OUT/Pretendard1000-${weight}.ttf"
+  report="$OUT/Pretendard1000-${weight}.metrics.json"
 
   [[ -f "$base" ]] || {
     echo "Missing Iosevka ${weight} base. Run scripts/build_iosevka.sh first." >&2

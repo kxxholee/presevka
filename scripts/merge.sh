@@ -5,12 +5,12 @@ source "$ROOT/scripts/weights.sh"
 mkdir -p "$ROOT/dist/licenses"
 
 for weight in "${PRESEVKA_WEIGHTS[@]}"; do
-  hangul="$ROOT/build/pretendard/Pretendard864-${weight}.ttf"
+  hangul="$ROOT/build/pretendard/Pretendard1000-${weight}.ttf"
   [[ -f "$hangul" ]] || { echo "Missing $hangul" >&2; exit 1; }
 
   for slope in "${PRESEVKA_SLOPES[@]}"; do
     variant="$(presevka_variant_suffix "$weight" "$slope")"
-    base="$ROOT/build/iosevka/Iosevka432-${variant}.ttf"
+    base="$ROOT/build/iosevka/Iosevka500-${variant}.ttf"
     output_font="$ROOT/dist/Presevka-${variant}.ttf"
 
     [[ -f "$base" ]] || { echo "Missing $base" >&2; exit 1; }
