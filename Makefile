@@ -1,4 +1,4 @@
-.PHONY: build build-fast package doctor install clean distclean
+.PHONY: build build-fast package banner doctor install clean distclean
 
 build:
 	./scripts/build.sh
@@ -9,6 +9,11 @@ build-fast:
 
 package:
 	./scripts/package.sh
+
+# Redraw the README banners from the fonts in dist/. Declares its own
+# dependencies inline, so it needs no entry in pyproject.toml.
+banner:
+	uv run tools/render_banner.py
 
 doctor:
 	./scripts/doctor.sh

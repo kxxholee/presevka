@@ -13,7 +13,5 @@ __pycache__/
 *.pyc
 .DS_Store
 
-# Documentation artwork helper; not required to build the font.
-tools/render_banner.py
 .serena
 .serena/*
