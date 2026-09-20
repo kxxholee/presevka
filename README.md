@@ -57,7 +57,13 @@ make package
 ```
 
 `dist/`에 `Presevka-<버전>-ttf.zip`과 `Presevka-<버전>-woff2.zip`이 생성되며,
-각 아카이브에는 라이선스 문서가 함께 들어갑니다.
+각 아카이브에는 라이선스 문서가 함께 들어갑니다. WOFF2 변환은 brotli 최고
+압축을 쓰기 때문에 페이스당 수 분이 걸립니다. 기본적으로 코어 수만큼 병렬로
+처리하며, `PRESEVKA_PACKAGE_JOBS`로 조정할 수 있습니다.
+
+```sh
+PRESEVKA_PACKAGE_JOBS=4 make package
+```
 
 ## 글꼴 구성
 
