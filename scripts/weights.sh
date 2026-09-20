@@ -44,3 +44,31 @@ presevka_variant_suffix() {
     printf '%s%s\n' "$weight" "$slope"
   fi
 }
+
+# Hinting stage, selected by PRESEVKA_HINT and shared by build_iosevka.sh,
+# merge.sh and the QA step.
+#   full  - ttfautohint over the merged font, so Hangul is hinted too (default)
+#   latin - ttfautohint over the Iosevka base only, leaving Hangul unhinted
+#   gasp  - no ttfautohint; only the gasp smoothing and dropout-control table
+#   none  - ship raw outlines
+presevka_hint_mode() {
+  local mode="${PRESEVKA_HINT:-full}"
+  case "$mode" in
+    full | latin | gasp | none)
+      printf '%s\n' "$mode"
+      ;;
+    *)
+      echo "PRESEVKA_HINT must be one of: full latin gasp none (got '$mode')" >&2
+      return 1
+      ;;
+  esac
+}
+
+# Replace a built font with its hinted form. Writes through a temporary file so
+# an interrupted run cannot leave a half-written face behind.
+presevka_apply_hinting() {
+  local root="$1" action="$2" font="$3"
+  uv run python "$root/tools/hint_font.py" "$action" \
+    --input "$font" --output "$font.tmp"
+  mv "$font.tmp" "$font"
+}

@@ -4,6 +4,23 @@ from collections.abc import Iterable
 from fontTools.pens.boundsPen import BoundsPen
 from fontTools.ttLib import TTFont
 
+
+def _font_revision(version: str) -> float:
+    """Derive head.fontRevision from the public version string.
+
+    head.fontRevision is 16.16 fixed point, so 0.4.0 becomes 0.4 and 0.4.1
+    becomes 0.401. Deriving it keeps the two from drifting apart.
+    """
+    major, minor, patch = (int(part) for part in version.split("."))
+    return round(major + minor / 10 + patch / 1000, 3)
+
+
+# Single source of truth. merge_fonts.py stamps these into every face and
+# qa_font.py verifies them, so a release bump only happens here and in
+# pyproject.toml.
+PRESEVKA_VERSION = "0.4.0"
+PRESEVKA_FONT_REVISION = _font_revision(PRESEVKA_VERSION)
+
 PRESEVKA_WEIGHTS = (
     "Thin",
     "ExtraLight",
@@ -26,21 +43,46 @@ PRESEVKA_HANGUL_CELL = 1000
 # conventional full-em cell leaves the remainder as side bearings.
 PRESEVKA_HANGUL_OUTLINE_X_SCALE = 1.02
 
+# Hinting stages, selected by the PRESEVKA_HINT environment variable.
+#   full  - ttfautohint over the merged font, so Hangul is hinted too
+#   latin - ttfautohint over the Iosevka base only, leaving Hangul unhinted
+#   gasp  - no ttfautohint; only the gasp smoothing table
+#   none  - ship raw outlines
+# Every mode except "none" writes a gasp table.
+PRESEVKA_HINT_MODES = ("full", "latin", "gasp", "none")
+PRESEVKA_DEFAULT_HINT_MODE = "full"
+
 # Strict 2-cell characters in the resulting monospace font.
 STRICT_HANGUL_RANGES = (
     (0x3130, 0x318F),  # Hangul Compatibility Jamo
     (0xAC00, 0xD7A3),  # Modern precomposed Hangul syllables
 )
 
-# Imported too, but their original shaping/advance behavior is preserved where
-# appropriate instead of blindly forcing every conjoining Jamo to 2 cells.
-ALL_HANGUL_RANGES = (
-    (0x1100, 0x11FF),  # Hangul Jamo
-    (0x3130, 0x318F),  # Hangul Compatibility Jamo
-    (0xA960, 0xA97F),  # Jamo Extended-A
-    (0xAC00, 0xD7A3),  # Modern precomposed Hangul syllables
-    (0xD7B0, 0xD7FF),  # Jamo Extended-B
+# Every Hangul codepoint imported from the donor.
+#
+# Identical to the strict set: the pinned Pretendard provides only full-width
+# standalone characters. Hangul Jamo (U+1100-11FF), Jamo Extended-A
+# (U+A960-A97F) and Extended-B (U+D7B0-D7FF) used to be listed here but matched
+# nothing, because Pretendard v1.3.9 ships no conjoining jamo at all. A donor
+# that did provide them would extend this tuple but not STRICT_HANGUL_RANGES,
+# since conjoining jamo must keep their own composing advances rather than be
+# forced to two Latin cells. qa_font.py pins the expected coverage so such a
+# donor fails the build instead of changing the font silently.
+ALL_HANGUL_RANGES = STRICT_HANGUL_RANGES
+
+# Blocks the pinned donor deliberately does not provide. qa_font.py fails the
+# build if a future donor starts supplying them, because conjoining jamo need
+# composing advances and jamo-composition GSUB rules rather than the two-cell
+# treatment every imported glyph gets today.
+DONOR_ABSENT_HANGUL_RANGES = (
+    (0x1100, 0x11FF),  # Hangul Jamo (conjoining)
+    (0xA960, 0xA97F),  # Hangul Jamo Extended-A
+    (0xD7B0, 0xD7FF),  # Hangul Jamo Extended-B
 )
+
+# Coverage the pinned donor is expected to deliver, asserted after every merge.
+EXPECTED_MODERN_SYLLABLES = 11172
+EXPECTED_COMPAT_JAMO = 53
 
 
 def in_ranges(cp: int, ranges: Iterable[tuple[int, int]]) -> bool:

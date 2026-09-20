@@ -1,0 +1,101 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+  # Lets a release be cut from the Actions tab without deleting and re-pushing
+  # a tag by hand. The tag is created only after the build and QA succeed.
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, without the leading v (for example 0.4.0)"
+        required: true
+        type: string
+      move_tag:
+        description: "Move the tag if it already exists"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Restore upstream sources
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache/src/Iosevka
+            .cache/src/pretendard
+          key: upstream-${{ hashFiles('scripts/build_iosevka.sh', 'scripts/build_pretendard.sh') }}
+          restore-keys: upstream-
+
+      # The tag and the version the fonts are stamped with must agree, or the
+      # release would advertise a version no face actually reports.
+      - name: Resolve version and tag
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          font_version="$(PYTHONPATH=tools uv run python -c \
+            'import font_utils; print(font_utils.PRESEVKA_VERSION)')"
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            tag="v${INPUT_VERSION#v}"
+          else
+            tag="$GITHUB_REF_NAME"
+          fi
+          if [[ "${tag#v}" != "$font_version" ]]; then
+            echo "Tag $tag does not match font version $font_version." >&2
+            echo "Update tools/font_utils.py and pyproject.toml, or pick another tag." >&2
+            exit 1
+          fi
+          echo "version=$font_version" >> "$GITHUB_ENV"
+          echo "tag=$tag" >> "$GITHUB_ENV"
+
+      # Releases always ship the default hinting mode.
+      - name: Build Presevka
+        run: ./scripts/build.sh
+
+      - name: Package archives
+        run: ./scripts/package.sh
+
+      - name: Create or move tag
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          MOVE_TAG: ${{ inputs.move_tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+            if [[ "$MOVE_TAG" != "true" ]]; then
+              echo "Tag $tag already exists. Re-run with 'Move the tag' enabled." >&2
+              exit 1
+            fi
+            git push --delete origin "$tag"
+          fi
+          git tag -f "$tag"
+          git push origin "$tag"
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.tag }}
+          draft: true
+          generate_release_notes: true
+          files: |
+            dist/Presevka-${{ env.version }}-ttf.zip
+            dist/Presevka-${{ env.version }}-woff2.zip
+            dist/Presevka-*.ttf

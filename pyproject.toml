@@ -5,6 +5,8 @@ description = "Build Presevka from 500-unit Iosevka and 1000-unit Pretendard Han
 requires-python = ">=3.11"
 dependencies = [
   "fonttools>=4.63.0",
+  "ttfautohint-py>=0.5.1",
+  "brotli>=1.1.0",
 ]
 
 [tool.uv]

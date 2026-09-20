@@ -9,8 +9,11 @@ from fontTools.ttLib import TTFont
 
 from font_utils import (
     ALL_HANGUL_RANGES,
+    EXPECTED_MODERN_SYLLABLES,
+    PRESEVKA_FONT_REVISION,
     PRESEVKA_LATIN_CELL,
     PRESEVKA_SLOPES,
+    PRESEVKA_VERSION,
     PRESEVKA_WEIGHTS,
     best_cmap,
     in_ranges,
@@ -18,10 +21,6 @@ from font_utils import (
     presevka_legacy_names,
     presevka_style_name,
 )
-
-
-FONT_VERSION = "0.4.0"
-FONT_REVISION = 0.4
 
 
 def parse_args() -> argparse.Namespace:
@@ -52,8 +51,8 @@ def set_names(font: TTFont, family: str, weight: str, slope: str) -> None:
     rewritten_ids = {0, 1, 2, 3, 4, 5, 6, 13, 14, 16, 17, 18, 21, 22, 25}
     name.names = [record for record in name.names if record.nameID not in rewritten_ids]
 
-    version = f"Version {FONT_VERSION}"
-    unique_id = f"Presevka:{style}:{FONT_VERSION}"
+    version = f"Version {PRESEVKA_VERSION}"
+    unique_id = f"Presevka:{style}:{PRESEVKA_VERSION}"
     copyright_notice = (
         "Iosevka Copyright (c) 2015-2026 Renzhi Li; "
         "Pretendard Copyright (c) 2021 Kil Hyung-jin and its upstream authors; "
@@ -83,7 +82,7 @@ def set_names(font: TTFont, family: str, weight: str, slope: str) -> None:
         mac_value = value.replace("Kwanho Lee (\uc774\uad00\ud638)", "Kwanho Lee")
         name.setName(mac_value, nid, 1, 0, 0)
 
-    font["head"].fontRevision = FONT_REVISION
+    font["head"].fontRevision = PRESEVKA_FONT_REVISION
 
 
 def main() -> None:
@@ -143,8 +142,11 @@ def main() -> None:
             used_names.add(new_name)
             mapping[cp] = new_name
 
-        if len(mapping) < 11172:
-            raise RuntimeError(f"only {len(mapping)} Hangul mappings prepared; expected at least 11172")
+        if len(mapping) < EXPECTED_MODERN_SYLLABLES:
+            raise RuntimeError(
+                f"only {len(mapping)} Hangul mappings prepared; "
+                f"expected at least {EXPECTED_MODERN_SYLLABLES}"
+            )
 
         base.setGlyphOrder(glyph_order)
         base["maxp"].numGlyphs = len(glyph_order)

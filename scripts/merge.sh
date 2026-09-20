@@ -2,6 +2,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT/scripts/weights.sh"
+HINT_MODE="$(presevka_hint_mode)"
 mkdir -p "$ROOT/dist/licenses"
 
 for weight in "${PRESEVKA_WEIGHTS[@]}"; do
@@ -23,12 +24,20 @@ for weight in "${PRESEVKA_WEIGHTS[@]}"; do
       --weight "$weight" \
       --slope "$slope"
 
+    # "latin" needs nothing here: its gasp table and bytecode came from the
+    # already-hinted Iosevka base and survive the merge untouched.
+    case "$HINT_MODE" in
+      full) presevka_apply_hinting "$ROOT" autohint "$output_font" ;;
+      gasp) presevka_apply_hinting "$ROOT" smooth "$output_font" ;;
+    esac
+
     uv run python "$ROOT/tools/qa_font.py" \
       "$output_font" \
       --family "Presevka" \
       --weight "$weight" \
       --slope "$slope" \
       --weight-class "${PRESEVKA_WEIGHT_CLASSES[$weight]}" \
+      --hinting "$HINT_MODE" \
       --hangul-source "$hangul"
   done
 done
