@@ -8,10 +8,17 @@ from fontTools.ttLib import TTFont
 from fontTools.pens.recordingPen import DecomposingRecordingPen
 
 from font_utils import (
+    DONOR_ABSENT_HANGUL_RANGES,
+    EXPECTED_COMPAT_JAMO,
+    EXPECTED_MODERN_SYLLABLES,
+    PRESEVKA_DEFAULT_HINT_MODE,
+    PRESEVKA_FONT_REVISION,
     PRESEVKA_HANGUL_CELL,
+    PRESEVKA_HINT_MODES,
     PRESEVKA_LATIN_CELL,
     PRESEVKA_POST_ITALIC_ANGLE,
     PRESEVKA_SLOPES,
+    PRESEVKA_VERSION,
     PRESEVKA_WEIGHTS,
     STRICT_HANGUL_RANGES,
     best_cmap,
@@ -31,9 +38,12 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--weight", choices=PRESEVKA_WEIGHTS, default="Regular")
     p.add_argument("--slope", choices=PRESEVKA_SLOPES, default="Upright")
     p.add_argument("--weight-class", type=int, default=400)
-    p.add_argument("--version", default="0.4.0")
-    p.add_argument("--font-revision", type=float, default=0.4)
+    p.add_argument("--version", default=PRESEVKA_VERSION)
+    p.add_argument("--font-revision", type=float, default=PRESEVKA_FONT_REVISION)
     p.add_argument("--hangul-source", type=Path)
+    p.add_argument(
+        "--hinting", choices=PRESEVKA_HINT_MODES, default=PRESEVKA_DEFAULT_HINT_MODE
+    )
     return p.parse_args()
 
 
@@ -41,6 +51,78 @@ def decomposed_outline(font: TTFont, glyph_name: str):
     pen = DecomposingRecordingPen(font.getGlyphSet())
     font.getGlyphSet()[glyph_name].draw(pen)
     return pen.value
+
+
+def instructed_glyphs(font: TTFont, names) -> int:
+    """Count glyphs carrying TrueType hinting bytecode."""
+    glyf = font["glyf"]
+    total = 0
+    for name in names:
+        program = getattr(glyf[name], "program", None)
+        if program is not None and program.getBytecode():
+            total += 1
+    return total
+
+
+def check_hinting(font: TTFont, cmap: dict, mode: str) -> str:
+    """Verify the font carries exactly the hinting the build asked for."""
+    hangul = {
+        name for cp, name in cmap.items() if in_ranges(cp, STRICT_HANGUL_RANGES)
+    }
+    latin = {
+        cmap[ord(ch)] for ch in "ABCabc0123" if ord(ch) in cmap
+    }
+    hangul_hinted = instructed_glyphs(font, hangul)
+    latin_hinted = instructed_glyphs(font, latin)
+    has_gasp = "gasp" in font
+    bytecode_tables = [tag for tag in ("fpgm", "prep", "cvt ") if tag in font]
+
+    if mode == "none":
+        if has_gasp:
+            raise RuntimeError("hinting mode 'none' must not write a gasp table")
+        if hangul_hinted or latin_hinted:
+            raise RuntimeError(
+                f"hinting mode 'none' must leave every glyph uninstructed; "
+                f"found latin={latin_hinted}, hangul={hangul_hinted}"
+            )
+        return "none (raw outlines)"
+
+    if not has_gasp:
+        raise RuntimeError(f"hinting mode {mode!r} requires a gasp table")
+
+    if mode == "gasp":
+        if "prep" not in font:
+            raise RuntimeError("hinting mode 'gasp' requires a prep program")
+        if hangul_hinted or latin_hinted:
+            raise RuntimeError(
+                f"hinting mode 'gasp' must not instruct glyphs; "
+                f"found latin={latin_hinted}, hangul={hangul_hinted}"
+            )
+        return "gasp only (smoothing + dropout control)"
+
+    if sorted(bytecode_tables) != ["cvt ", "fpgm", "prep"]:
+        raise RuntimeError(
+            f"hinting mode {mode!r} requires fpgm/prep/cvt; got {bytecode_tables}"
+        )
+    if latin_hinted != len(latin):
+        raise RuntimeError(
+            f"hinting mode {mode!r} must instruct every Latin probe glyph: "
+            f"{latin_hinted}/{len(latin)}"
+        )
+
+    if mode == "latin":
+        if hangul_hinted:
+            raise RuntimeError(
+                f"hinting mode 'latin' must leave Hangul uninstructed; "
+                f"found {hangul_hinted}"
+            )
+        return f"latin only ({latin_hinted}/{len(latin)} probes, Hangul untouched)"
+
+    if not hangul_hinted:
+        raise RuntimeError(
+            "hinting mode 'full' must instruct Hangul; found none"
+        )
+    return f"full ({hangul_hinted}/{len(hangul)} Hangul glyphs instructed)"
 
 
 def main() -> None:
@@ -67,8 +149,31 @@ def main() -> None:
             )
 
         modern = [cp for cp in range(0xAC00, 0xD7A4) if cp in cmap]
-        if len(modern) != 11172:
-            raise RuntimeError(f"modern Hangul coverage: {len(modern)}/11172")
+        if len(modern) != EXPECTED_MODERN_SYLLABLES:
+            raise RuntimeError(
+                f"modern Hangul coverage: {len(modern)}/{EXPECTED_MODERN_SYLLABLES}"
+            )
+
+        compat_jamo = [cp for cp in range(0x3130, 0x3190) if cp in cmap]
+        if len(compat_jamo) != EXPECTED_COMPAT_JAMO:
+            raise RuntimeError(
+                f"Hangul compatibility jamo coverage: "
+                f"{len(compat_jamo)}/{EXPECTED_COMPAT_JAMO}"
+            )
+
+        # Pretendard supplies no conjoining jamo, so these blocks must stay
+        # empty. If a donor ever fills them, they need composing advances and
+        # jamo-composition GSUB rules rather than the two-cell treatment every
+        # imported glyph gets here, so fail loudly instead of shipping them.
+        unexpected = [
+            cp for cp in cmap if in_ranges(cp, DONOR_ABSENT_HANGUL_RANGES)
+        ]
+        if unexpected:
+            raise RuntimeError(
+                f"{len(unexpected)} conjoining/extended jamo appeared "
+                f"(first U+{min(unexpected):04X}); revisit ALL_HANGUL_RANGES "
+                "and the two-cell fitting before shipping them"
+            )
 
         strict_widths = {
             hmtx.metrics[name][0]
@@ -213,6 +318,8 @@ def main() -> None:
                 f"got {font['post'].italicAngle}"
             )
 
+        hinting_summary = check_hinting(font, cmap, args.hinting)
+
         if args.hangul_source:
             source = TTFont(args.hangul_source)
             try:
@@ -243,7 +350,9 @@ def main() -> None:
         print(f"Hangul advance: {PRESEVKA_HANGUL_CELL}")
         print(f"Hangul ink envelope: {actual_ink_width:.1f}")
         print(f"Style: {style} ({args.weight_class})")
+        print(f"Hinting: {hinting_summary}")
         print(f"Modern Hangul mappings: {len(modern)}")
+        print(f"Compatibility jamo mappings: {len(compat_jamo)}")
         print(f"Minimum modern-Hangul ink margins: left={min_left:.1f}, right={min_right:.1f}")
     finally:
         font.close()

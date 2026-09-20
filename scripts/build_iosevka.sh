@@ -2,6 +2,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT/scripts/weights.sh"
+HINT_MODE="$(presevka_hint_mode)"
 SRC="$ROOT/.cache/src/Iosevka"
 OUT="$ROOT/build/iosevka"
 REPO="${IOSEVKA_REPO:-https://github.com/be5invis/Iosevka.git}"
@@ -46,6 +47,14 @@ for weight in "${PRESEVKA_WEIGHTS[@]}"; do
     fi
 
     cp "$source_font" "$output_font"
+
+    # In "latin" mode the Latin base is hinted here, before Hangul is merged in,
+    # so ttfautohint never sees a Hangul outline. Every other mode either hints
+    # the merged font or skips ttfautohint entirely.
+    if [[ "$HINT_MODE" == "latin" ]]; then
+      presevka_apply_hinting "$ROOT" autohint "$output_font"
+    fi
+
     uv run python "$ROOT/tools/verify_iosevka.py" \
       "$output_font" \
       --weight-class "${PRESEVKA_WEIGHT_CLASSES[$weight]}" \

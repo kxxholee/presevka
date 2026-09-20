@@ -25,6 +25,7 @@ on:
       - "THIRD_PARTY.md"
       - "FONTLOG.md"
       - "pyproject.toml"
+      - ".github/workflows/build.yml"
 
 jobs:
   build:
@@ -36,8 +37,23 @@ jobs:
         with:
           node-version: "22"
       - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      # Iosevka is a shallow clone plus a full npm install; both dominate the
+      # build. Keyed on the pinned refs so a version bump invalidates the cache.
+      - name: Restore upstream sources
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache/src/Iosevka
+            .cache/src/pretendard
+          key: upstream-${{ hashFiles('scripts/build_iosevka.sh', 'scripts/build_pretendard.sh') }}
+          restore-keys: upstream-
+
       - name: Build Presevka
         run: ./scripts/build.sh
+
       - name: Upload font artifact
         uses: actions/upload-artifact@v4
         with:

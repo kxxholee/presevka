@@ -50,21 +50,52 @@ Italic에서도 한글과 자모는 기울이지 않은 Pretendard 윤곽을 유
 1000-unit advance 안에 배치됩니다. Pretendard 한글 윤곽은 원본 비율을 유지한
 채 가로로 2%만 확대하고, 나머지 폭은 좌우 여백으로 둡니다.
 
-### Iosevka 라틴 커스터마이징
+배포용 아카이브와 WOFF2가 필요하면 빌드 후 다음을 실행합니다.
 
-Presevka의 기본 라틴 디자인은 Iosevka의 `ss14`(JetBrains Mono Style)
-preset을 상속하고, 원본과 같은 500-unit 셀 폭을 사용합니다. 이 설정은
-[`config/private-build-plans.toml`](./config/private-build-plans.toml)에 있습니다.
+```sh
+make package
+```
 
-다른 Iosevka 스타일을 사용하려면 build plan에 원하는 stylistic set을
-상속하도록 설정합니다. 예를 들어 Input Mono Style은 다음과 같습니다.
+`dist/`에 `Presevka-<버전>-ttf.zip`과 `Presevka-<버전>-woff2.zip`이 생성되며,
+각 아카이브에는 라이선스 문서가 함께 들어갑니다.
+
+## 글꼴 구성
+
+| 항목 | 값 |
+| --- | --- |
+| 라틴 advance | 500 units (1000 UPM) |
+| 한글 advance | 1000 units (라틴 두 칸) |
+| 현대 한글 음절 | 11,172자 (U+AC00–D7A3 전체) |
+| 한글 호환 자모 | 53자 (U+3130–318F의 현대 자모 전체) |
+| 페이스 | 9 weight × Upright/Italic = 18개 |
+
+> [!NOTE]
+> 결합(조합용) 자모 U+1100–11FF와 Jamo Extended-A/B는 포함되지 않습니다.
+> 한글 글리프의 기반인 Pretendard가 해당 글리프를 제공하지 않기 때문입니다.
+> 한글이 NFD로 정규화된 텍스트(예: macOS 파일명)는 HarfBuzz 계열 렌더러가
+> 자모를 완성형 음절로 다시 조합해 주므로 대부분의 터미널과 브라우저에서
+> 정상적으로 표시되지만, 조합을 수행하지 않는 렌더러에서는 표시되지 않습니다.
+
+## 커스터마이징
+
+축이 두 가지입니다. 어느 쪽이든 바꾼 뒤에는
+`./scripts/build_iosevka.sh`와 `./scripts/merge.sh`를 차례로 실행하면 됩니다.
+Pretendard가 준비되지 않은 상태라면 `make build`로 전체를 돌리세요.
+
+### 1. 라틴 글리프 디자인
+
+[`config/private-build-plans.toml`](./config/private-build-plans.toml)을
+편집합니다. 기본값은 stock Iosevka이며 어떤 character variant도 덮어쓰지
+않습니다.
+
+stylistic set 전체를 상속하려면 다음을 추가합니다.
 
 ```toml
 [buildPlans.PresevkaBase500.variants]
-inherits = "ss18"
+inherits = "ss14"   # JetBrains Mono Style. Input Mono Style은 "ss18"
 ```
 
-특정 글리프만 바꾸려면 같은 build plan에 variant override를 추가할 수 있습니다.
+특정 글리프만 바꾸려면 variant override를 추가합니다.
 
 ```toml
 [buildPlans.PresevkaBase500.variants.design]
@@ -74,9 +105,29 @@ zero = "slashed"
 
 사용 가능한 preset과 variant 이름은
 [Iosevka v34.8.0 Custom Build 문서](https://github.com/be5invis/Iosevka/blob/v34.8.0/doc/custom-build.md)를
-참고하세요. 설정을 바꾼 뒤 `make build`를 다시 실행하면 됩니다. Pretendard가
-이미 준비된 작업 트리에서는 `./scripts/build_iosevka.sh`와
-`./scripts/merge.sh`만 차례로 실행해도 됩니다.
+참고하세요. `[weights]`, `[slopes]`, `[widths]` 섹션은 한글 맞춤과 직결되므로
+그대로 두는 편이 좋습니다.
+
+### 2. 힌팅
+
+`PRESEVKA_HINT` 환경변수로 고릅니다. 기본값은 `full`이며 릴리스도 `full`로
+빌드됩니다.
+
+| 값 | 동작 | Regular 크기 |
+| --- | --- | --- |
+| `full` (기본) | 병합된 폰트 전체에 ttfautohint 적용. 한글도 힌팅됨 | 14.7 MB |
+| `latin` | Iosevka 베이스에만 적용. 한글은 Pretendard 원본 렌더링 유지 | 11.8 MB |
+| `gasp` | ttfautohint 없이 gasp 스무딩과 dropout control만 | 8.8 MB |
+| `none` | 힌팅 없는 원본 윤곽 | 8.8 MB |
+
+```sh
+PRESEVKA_HINT=latin make build
+make build-fast              # PRESEVKA_HINT=none 과 동일. 반복 빌드용
+```
+
+11–13px 같은 작은 크기에서는 `full`이 한글 가로획을 픽셀 그리드에 맞춰 눈에
+띄게 또렷합니다. 한글을 Pretendard가 의도한 렌더링 그대로 두고 싶다면 `latin`을
+쓰세요.
 
 <!-- 
 Linux에서는 다음 명령으로 현재 사용자에게 바로 설치할 수 있습니다.

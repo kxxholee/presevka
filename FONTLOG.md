@@ -25,19 +25,30 @@ Exact notices and license terms are recorded in `OFL.txt` and
 
 ## ChangeLog
 
-### 16 September 2026 - Presevka 0.4.0 - Kwanho Lee (이관호)
+### 20 September 2026 - Presevka 0.4.0 - Kwanho Lee (이관호)
 
-- Adopted Iosevka's `ss14` (JetBrains Mono Style) character-variant preset and
-  its upstream-default 500-unit Latin cell for familiar glyph forms and
-  conventional half-em proportions.
+- Adopted Iosevka's stock character variants and its upstream-default 500-unit
+  Latin cell for conventional half-em proportions. No stylistic set or
+  character variant is overridden; custom builds may select their own.
 - Set the strict Hangul advance to 1000 units, retaining the conventional
   relationship of one Hangul cell to two Latin cells.
 - Preserved Pretendard's original weight-dependent horizontal proportions,
   applying the same minimal 2% enlargement to every Hangul and Jamo outline
   and centering it in the full-em cell. Resulting ink envelopes span 858–934
   units across the nine weights.
+- Added TrueType hinting. By default ttfautohint runs over the merged font, so
+  Latin and Hangul are both hinted; `PRESEVKA_HINT` selects `latin` (hint the
+  Iosevka base only, leaving Pretendard outlines untouched), `gasp` (smoothing
+  and dropout control only) or `none` (raw outlines).
+- Corrected the imported Hangul range list. Hangul Jamo (U+1100-11FF) and Jamo
+  Extended-A/B were listed but matched nothing, because the pinned Pretendard
+  ships no conjoining jamo; the font covers 11,172 modern syllables and 53
+  compatibility jamo. Text in NFD form therefore relies on the shaping engine
+  to compose jamo back into precomposed syllables.
 - Added build-time and final-font QA for the 500/1000 advances, the prepared
-  Hangul geometry, and upright Hangul outlines in Italic faces.
+  Hangul geometry, upright Hangul outlines in Italic faces, Hangul coverage,
+  and the hinting stage actually applied.
+- Added WOFF2 output, release archives, and a tag-triggered release build.
 - Documented how to select an Iosevka stylistic-set preset or override
   individual Latin glyph variants in custom builds.
 

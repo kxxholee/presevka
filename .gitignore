@@ -2,6 +2,8 @@
 .cache/
 build/
 dist/*.ttf
+dist/*.zip
+dist/woff2/
 dist/*.json
 dist/OFL.txt
 dist/licenses/

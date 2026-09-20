@@ -6,6 +6,7 @@ from pathlib import Path
 
 from font_utils import (
     ALL_HANGUL_RANGES,
+    EXPECTED_MODERN_SYLLABLES,
     PRESEVKA_HANGUL_CELL,
     PRESEVKA_HANGUL_OUTLINE_X_SCALE,
     PRESEVKA_LATIN_CELL,
@@ -119,9 +120,10 @@ def main() -> None:
             for cp, name in cmap.items()
             if 0xAC00 <= cp <= 0xD7A3 and name in hmtx.metrics
         }
-        if len(modern_names) != 11172:
+        if len(modern_names) != EXPECTED_MODERN_SYLLABLES:
             raise RuntimeError(
-                f"Pretendard source has {len(modern_names)} modern Hangul glyphs; expected 11172"
+                f"Pretendard source has {len(modern_names)} modern Hangul glyphs; "
+                f"expected {EXPECTED_MODERN_SYLLABLES}"
             )
 
         modern_advances = {hmtx.metrics[name][0] for name in modern_names}

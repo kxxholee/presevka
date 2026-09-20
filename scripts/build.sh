@@ -2,7 +2,9 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT/scripts/weights.sh"
+HINT_MODE="$(presevka_hint_mode)"
 
+echo "Hinting mode: $HINT_MODE  (override with PRESEVKA_HINT=full|latin|gasp|none)"
 "$ROOT/scripts/doctor.sh"
 "$ROOT/scripts/build_iosevka.sh"
 "$ROOT/scripts/build_pretendard.sh"

@@ -1,18 +1,43 @@
-# Presevka Latin base — Iosevka SS14 (JetBrains Mono Style), default width.
+# Presevka Latin base — stock Iosevka glyph design and width.
 # Target Iosevka: v34.8.0.
 #
-# Glyph variants inherit Iosevka's maintained ss14 preset unchanged.
-# Presevka supplies its own family metadata and nine weights with upright and
-# italic slopes. The 500-unit Latin cell pairs with a 1000-unit Hangul cell.
+# This file is the Latin half of Presevka, and it is the file to edit if you
+# want different letterforms. Presevka supplies its own family metadata and
+# nine weights with upright and italic slopes; the 500-unit Latin cell pairs
+# with a 1000-unit Hangul cell. Leave the [weights], [slopes] and [widths]
+# sections alone unless you also intend to redo the Hangul fitting.
+#
+# ---------------------------------------------------------------------------
+# Customizing the Latin design
+# ---------------------------------------------------------------------------
+# No character variants are overridden by default: you get stock Iosevka.
+#
+# To adopt a whole stylistic set, add a variants section. For example,
+# ss14 is JetBrains Mono Style and ss18 is Input Mono Style:
+#
+#     [buildPlans.PresevkaBase500.variants]
+#     inherits = "ss14"
+#
+# To change individual glyphs instead, or on top of an inherited set:
+#
+#     [buildPlans.PresevkaBase500.variants.design]
+#     i = "serifed-asymmetric"
+#     zero = "slashed"
+#     one = "base"
+#
+# Every preset and variant name is listed in the Iosevka v34.8.0 custom-build
+# documentation:
+# https://github.com/be5invis/Iosevka/blob/v34.8.0/doc/custom-build.md
+#
+# After editing, run `make build`. If Pretendard is already prepared in this
+# working tree, `./scripts/build_iosevka.sh` then `./scripts/merge.sh` is
+# enough. Use `make build-fast` to skip hinting while iterating.
 
 [buildPlans.PresevkaBase500]
 family = "Presevka Base 500"
 spacing = "normal"
 serifs = "sans"
 exportGlyphNames = false
-
-[buildPlans.PresevkaBase500.variants]
-inherits = "ss14"
 
 # Match Pretendard's nine static weights.
 [buildPlans.PresevkaBase500.weights.Thin]
