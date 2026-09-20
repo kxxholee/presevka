@@ -9,11 +9,14 @@
 """Render reproducible light/dark README banners for Presevka.
 
 Default composition:
-    프리   -> Presevka SemiBold
+    프리   -> Presevka Bold
     텐다드 -> Presevka Thin
     ×      -> Presevka Thin
     Io     -> Presevka Thin
-    sevka  -> Presevka SemiBold
+    sevka  -> Presevka Bold
+
+The emphasised weight is selectable with --heavy-weight, so the contrast can
+be retuned without editing this file.
 
 Both light and dark images share the exact same measured layout; only the
 palette changes. This keeps the glyph positions pixel-identical.
@@ -34,15 +37,15 @@ ROOT = Path(__file__).resolve().parents[1]
 @dataclass(frozen=True)
 class Segment:
     text: str
-    weight: str  # "thin" or "semibold"
+    weight: str  # "thin" or "heavy"
 
 
 SEGMENTS = (
-    Segment("프리", "semibold"),
+    Segment("프리", "heavy"),
     Segment("텐다드", "thin"),
     Segment(" × ", "thin"),
     Segment("Io", "thin"),
-    Segment("sevka", "semibold"),
+    Segment("sevka", "heavy"),
 )
 
 
@@ -69,10 +72,15 @@ def parse_args() -> argparse.Namespace:
         "--font-dir",
         type=Path,
         default=ROOT / "dist",
-        help="Directory containing Presevka-Thin.ttf and Presevka-SemiBold.ttf",
+        help="Directory containing the Presevka faces to draw with",
+    )
+    parser.add_argument(
+        "--heavy-weight",
+        default="Bold",
+        help="Presevka weight used for the emphasised segments",
     )
     parser.add_argument("--thin-font", type=Path)
-    parser.add_argument("--semibold-font", type=Path)
+    parser.add_argument("--heavy-font", type=Path)
     parser.add_argument(
         "--output-dir",
         type=Path,
@@ -104,17 +112,17 @@ def resolve_font(explicit: Path | None, font_dir: Path, filename: str) -> Path:
     if not matches:
         raise SystemExit(
             f"could not find {filename} under {font_dir}\n"
-            "Build Presevka first, or pass --thin-font/--semibold-font explicitly."
+            "Build Presevka first, or pass --thin-font/--heavy-font explicitly."
         )
     raise SystemExit(
         f"multiple {filename} files found under {font_dir}; pass the file explicitly"
     )
 
 
-def load_fonts(thin_path: Path, semibold_path: Path, size: int):
+def load_fonts(thin_path: Path, heavy_path: Path, size: int):
     return {
         "thin": ImageFont.truetype(str(thin_path), size=size),
-        "semibold": ImageFont.truetype(str(semibold_path), size=size),
+        "heavy": ImageFont.truetype(str(heavy_path), size=size),
     }
 
 
@@ -148,14 +156,14 @@ def fit_font_size(
     padding_y: int,
     requested_size: int,
     thin_path: Path,
-    semibold_path: Path,
+    heavy_path: Path,
 ) -> tuple[int, dict[str, ImageFont.FreeTypeFont], tuple[float, float, float]]:
     scratch = Image.new("RGB", (8, 8))
     draw = ImageDraw.Draw(scratch)
 
     size = requested_size
     while size >= 20:
-        fonts = load_fonts(thin_path, semibold_path, size)
+        fonts = load_fonts(thin_path, heavy_path, size)
         metrics = measure(draw, fonts)
         text_width, top, bottom = metrics
         text_height = bottom - top
@@ -209,8 +217,8 @@ def main() -> None:
         raise SystemExit("width, height, and font-size must be positive")
 
     thin_path = resolve_font(args.thin_font, args.font_dir, "Presevka-Thin.ttf")
-    semibold_path = resolve_font(
-        args.semibold_font, args.font_dir, "Presevka-SemiBold.ttf"
+    heavy_path = resolve_font(
+        args.heavy_font, args.font_dir, f"Presevka-{args.heavy_weight}.ttf"
     )
 
     size, fonts, metrics = fit_font_size(
@@ -220,7 +228,7 @@ def main() -> None:
         args.padding_y,
         args.font_size,
         thin_path,
-        semibold_path,
+        heavy_path,
     )
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -231,9 +239,12 @@ def main() -> None:
         outputs.append(output)
 
     print(f"Thin:      {thin_path}")
-    print(f"SemiBold:  {semibold_path}")
+    print(f"Heavy:     {heavy_path}")
     print(f"Font size: {size}px")
-    print("Composition: 프리[SemiBold] + 텐다드 × Io[Thin] + sevka[SemiBold]")
+    print(
+        f"Composition: 프리[{args.heavy_weight}] + 텐다드 × Io[Thin] "
+        f"+ sevka[{args.heavy_weight}]"
+    )
     for output in outputs:
         print(f"Wrote: {output}")
 
