@@ -11,16 +11,38 @@ WOFF2_DIR="$ROOT/dist/woff2"
 rm -rf "$STAGE" "$ROOT/dist"/Presevka-*.zip
 mkdir -p "$WOFF2_DIR"
 
-expected=0
+variants=()
 for weight in "${PRESEVKA_WEIGHTS[@]}"; do
   for slope in "${PRESEVKA_SLOPES[@]}"; do
     variant="$(presevka_variant_suffix "$weight" "$slope")"
-    ttf="$ROOT/dist/Presevka-${variant}.ttf"
-    [[ -f "$ttf" ]] || { echo "Missing $ttf. Run scripts/build.sh first." >&2; exit 1; }
-    uv run python "$ROOT/tools/make_woff2.py" \
-      --input "$ttf" --output "$WOFF2_DIR/Presevka-${variant}.woff2"
-    expected=$((expected + 1))
+    [[ -f "$ROOT/dist/Presevka-${variant}.ttf" ]] || {
+      echo "Missing $ROOT/dist/Presevka-${variant}.ttf. Run scripts/build.sh first." >&2
+      exit 1
+    }
+    variants+=("$variant")
   done
+done
+expected=${#variants[@]}
+
+# Brotli at its highest quality dominates packaging: roughly two minutes per
+# face, serially. The faces are independent, so fan them out across cores.
+presevka_woff2_one() {
+  uv run python "$ROOT/tools/make_woff2.py" \
+    --input "$ROOT/dist/Presevka-$1.ttf" \
+    --output "$WOFF2_DIR/Presevka-$1.woff2"
+}
+export -f presevka_woff2_one
+export ROOT WOFF2_DIR
+
+jobs="${PRESEVKA_PACKAGE_JOBS:-$(nproc 2>/dev/null || echo 2)}"
+printf '%s\n' "${variants[@]}" \
+  | xargs -P "$jobs" -I{} bash -c 'presevka_woff2_one "$@"' _ {}
+
+for variant in "${variants[@]}"; do
+  [[ -f "$WOFF2_DIR/Presevka-${variant}.woff2" ]] || {
+    echo "WOFF2 conversion failed for $variant" >&2
+    exit 1
+  }
 done
 
 # Both archives carry the same licensing paperwork as the loose fonts.

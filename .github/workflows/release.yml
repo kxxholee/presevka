@@ -17,13 +17,19 @@ on:
         type: boolean
         default: false
 
+# Never run two releases at once, and never cancel one midway: a half-finished
+# release can leave a tag pointing at an unpublished build.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
         with:

@@ -1,8 +1,17 @@
 name: build
 
+# A full Iosevka build plus hinting takes well over half an hour, so run it
+# once per change: branch pushes are covered by their pull request, and only
+# main builds on push.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     paths:
       - "config/**"
       - "scripts/**"
@@ -30,7 +39,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
